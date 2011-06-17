@@ -1,0 +1,29 @@
+THRIFT="/usr/local/thrift-0.6.1/"
+LIBEVENT="/usr/local/libevent-2.0.12/"
+
+src = [
+     'test.cpp',
+]
+
+cpppath = [
+    THRIFT + 'include',
+    LIBEVENT + 'include',
+]
+
+libpath = [
+    THRIFT + 'lib',
+    LIBEVENT + 'lib',
+]
+
+libs = [
+    'thrift',
+    'thriftnb',
+    'event',
+]
+
+env = Environment(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
+env.Append(CCFLAGS="-g")
+env.Append(CFLAGS="-g")
+env.Append(LINKFLAGS="-g")
+
+env.Program('test', src)
