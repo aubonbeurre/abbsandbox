@@ -3,10 +3,17 @@ LIBEVENT="/usr/local/libevent-2.0.12/"
 
 src = [
      'test.cpp',
+     'gen-cpp/shared_constants.cpp',
+     'gen-cpp/shared_types.cpp',
+     'gen-cpp/tutorial_constants.cpp',
+     'gen-cpp/tutorial_types.cpp',
+     'gen-cpp/Calculator.cpp',
+     'gen-cpp/SharedService.cpp',
 ]
 
 cpppath = [
-    THRIFT + 'include',
+    "gen-cpp",
+    THRIFT + 'include/thrift',
     LIBEVENT + 'include',
 ]
 
