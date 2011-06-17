@@ -30,7 +30,7 @@ libs = [
 env = Environment(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
 env.Append(CCFLAGS="-g")
 env.Append(CFLAGS="-g")
-env.Append(LINKFLAGS="-g")
+env.Append(LINKFLAGS=["-g", "-Wl,--no-undefined"])
 
 env.Program('client', gensrc + ['CppClient.cpp',])
 env.Program('server', gensrc + ['CppServer.cpp',])

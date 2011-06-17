@@ -23,6 +23,7 @@
 #include <server/TSimpleServer.h>
 #include <server/TThreadPoolServer.h>
 #include <server/TThreadedServer.h>
+#include <server/TNonblockingServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TTransportUtils.h>
 
@@ -37,6 +38,7 @@ using namespace apache::thrift;
 using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 using namespace apache::thrift::server;
+using namespace apache::thrift::concurrency;
 
 using namespace tutorial;
 using namespace shared;
@@ -116,13 +118,23 @@ int main(int argc, char **argv) {
   shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
   shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
   shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
-  shared_ptr<TServerTransport> serverTransport(new TServerSocket(9090));
+
+  // using thread pool with maximum 15 threads to handle incoming requests
+  shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(15);
+  shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+  threadManager->threadFactory(threadFactory);
+  threadManager->start();
+
+  TNonblockingServer server(processor, protocolFactory, 9090, threadManager);
+
+  /*  shared_ptr<TServerTransport> serverTransport(new TServerSocket(9090));
   shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
 
   TSimpleServer server(processor,
                        serverTransport,
                        transportFactory,
                        protocolFactory);
+  */
 
 
   /**
