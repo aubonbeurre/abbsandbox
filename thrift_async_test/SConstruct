@@ -3,6 +3,7 @@ LIBEVENT="/usr/local/libevent-2.0.12/"
 
 src = [
      'test.cpp',
+     'CalculatorHandler.cpp',
      'gen-cpp/shared_constants.cpp',
      'gen-cpp/shared_types.cpp',
      'gen-cpp/tutorial_constants.cpp',
