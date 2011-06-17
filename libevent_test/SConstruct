@@ -1,0 +1,22 @@
+src = [
+     'test.cpp',
+]
+
+cpppath = [
+    '/usr/local/libevent-2.0.12/include',
+]
+
+libpath = [
+    '/usr/local/libevent-2.0.12/lib',
+]
+
+libs = [
+    'event',
+]
+
+env = Environment(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
+env.Append(CCFLAGS="-g")
+env.Append(CFLAGS="-g")
+env.Append(LINKFLAGS="-g")
+
+env.Program('test', src)
