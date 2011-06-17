@@ -1,9 +1,7 @@
 THRIFT="/usr/local/thrift-0.6.1/"
 LIBEVENT="/usr/local/libevent-2.0.12/"
 
-src = [
-     'test.cpp',
-     'CalculatorHandler.cpp',
+gensrc = [
      'gen-cpp/shared_constants.cpp',
      'gen-cpp/shared_types.cpp',
      'gen-cpp/tutorial_constants.cpp',
@@ -34,4 +32,5 @@ env.Append(CCFLAGS="-g")
 env.Append(CFLAGS="-g")
 env.Append(LINKFLAGS="-g")
 
-env.Program('test', src)
+env.Program('client', gensrc + ['CppClient.cpp',])
+env.Program('server', gensrc + ['CppServer.cpp',])

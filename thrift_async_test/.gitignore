@@ -1,3 +1,4 @@
-test
+client
+server
 *.o
 .sconsign.dblite
