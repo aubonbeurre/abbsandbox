@@ -1,0 +1,40 @@
+Import('env')
+
+THRIFT="/usr/local/thrift-0.6.1/"
+LIBEVENT="/usr/local/libevent-2.0.12/"
+SRC_ROOT = env['SRC_ROOT']
+
+gensrc = [
+     SRC_ROOT + 'gen-cpp/shared_constants.cpp',
+     SRC_ROOT + 'gen-cpp/shared_types.cpp',
+     SRC_ROOT + 'gen-cpp/tutorial_constants.cpp',
+     SRC_ROOT + 'gen-cpp/tutorial_types.cpp',
+     SRC_ROOT + 'gen-cpp/Calculator.cpp',
+     SRC_ROOT + 'gen-cpp/SharedService.cpp',
+]
+
+cpppath = [
+    SRC_ROOT + "gen-cpp",
+    THRIFT + 'include/thrift',
+    LIBEVENT + 'include',
+]
+
+libpath = [
+    THRIFT + 'lib',
+    LIBEVENT + 'lib',
+]
+
+libs = [
+    'thrift',
+    'thriftnb',
+    'event',
+]
+
+env = env.Clone(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
+
+client = env.CustomProgram('client', gensrc + [SRC_ROOT + 'CppClient.cpp',])
+server = env.CustomProgram('server', gensrc + [SRC_ROOT + 'CppServer.cpp',])
+
+target = Alias('apps', [client, server])
+
+Return("target")

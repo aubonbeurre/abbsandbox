@@ -1,36 +1,185 @@
-THRIFT="/usr/local/thrift-0.6.1/"
-LIBEVENT="/usr/local/libevent-2.0.12/"
+import platform
+import subprocess
+import re
+import os
+import sys
 
-gensrc = [
-     'gen-cpp/shared_constants.cpp',
-     'gen-cpp/shared_types.cpp',
-     'gen-cpp/tutorial_constants.cpp',
-     'gen-cpp/tutorial_types.cpp',
-     'gen-cpp/Calculator.cpp',
-     'gen-cpp/SharedService.cpp',
-]
+sys.path.append("/usr/lib/scons/SCons")
 
-cpppath = [
-    "gen-cpp",
-    THRIFT + 'include/thrift',
-    LIBEVENT + 'include',
-]
+from SCons.Script.SConscript import SConsEnvironment
 
-libpath = [
-    THRIFT + 'lib',
-    LIBEVENT + 'lib',
-]
 
-libs = [
-    'thrift',
-    'thriftnb',
-    'event',
-]
+def get_cc_version(CC):
+    p = subprocess.Popen([CC, "--version"], stdout=subprocess.PIPE)
+    exp = re.compile(r"^.*(\d+)\.(\d+)\.(\d+).*$")
+    for l in p.stdout.readlines():
+        reg = exp.match(l)
+        if reg:
+            return int(reg.group(1)), int(reg.group(2)), int(reg.group(3))
+    raise "Unexpected version"
 
-env = Environment(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
-env.Append(CCFLAGS="-g")
-env.Append(CFLAGS="-g")
-env.Append(LINKFLAGS=["-g", "-Wl,--no-undefined"])
 
-env.Program('client', gensrc + ['CppClient.cpp',])
-env.Program('server', gensrc + ['CppServer.cpp',])
+def GetProcessorCount():
+    '''
+      Detects the number of CPUs on the system. Adapted form:
+      http://codeliberates.blogspot.com/2008/05/detecting-cpuscores-in-python.html
+    '''
+    # Linux, Unix and Mac OS X:
+    if hasattr(os, 'sysconf'):
+        if os.sysconf_names.has_key('SC_NPROCESSORS_ONLN'):
+            # Linux and Unix or Mac OS X with python >= 2.5:
+            return os.sysconf('SC_NPROCESSORS_ONLN')
+    else:  # Mac OS X with Python < 2.5:
+        return int(os.popen2("sysctl -n hw.ncpu")[1].read())
+    # Windows:
+    if os.environ.has_key('NUMBER_OF_PROCESSORS'):
+        return max(int(os.environ.get('NUMBER_OF_PROCESSORS', '1')), 1)
+    return 1  # Default
+
+# Set the default -j value based on the number of processors.
+SetOption('num_jobs', GetProcessorCount() + 1)
+
+# Have SCons use its cached dependency information.
+SetOption('implicit_cache', 1)
+
+# Only re-calculate MD5 checksums if a timestamp has changed.
+Decider('MD5-timestamp')
+
+# Since we set the -j value by default, suppress SCons warnings about being
+# unable to support parallel build on versions of Python with no threading.
+default_warnings = ['no-no-parallel-support']
+SetOption('warn', default_warnings + GetOption('warn'))
+
+dir = Dir('.')
+SRC_ROOT = dir.abspath + os.sep
+TOP_DIR = dir.abspath
+
+DEBUG=int(ARGUMENTS.get('debug', 0))
+OS32=int(ARGUMENTS.get('os32', 0))
+OS64=int(ARGUMENTS.get('os64', 0))
+GCC=int(ARGUMENTS.get('gcc', 0))
+
+OSBITS = platform.architecture()[0]
+if not OS32 and not OS64:
+    OS32 = OSBITS == "32bit"
+    OS64 = OSBITS == "64bit"
+
+BUILD_BITS = "64" if OS64 else "32"
+BUILD_TARGET = "debug" if DEBUG else "release"
+
+BUILD_PLATFORM = sys.platform
+if os.path.exists('/etc/debian_version'):
+    BUILD_PLATFORM = 'deb-' + BUILD_PLATFORM
+elif os.path.exists('/etc/redhat-release'):
+    BUILD_PLATFORM = 'rh-' + BUILD_PLATFORM
+else:
+    BUILD_PLATFORM = 'unk-' + BUILD_PLATFORM
+
+BUILD_DIR="${TOP_DIR}/targets/${BUILD_PLATFORM}/${BUILD_TARGET}/${BUILD_BITS}"
+
+CFLAGS = "-g" if DEBUG else "-O3"
+LINKFLAGS = ["-Wl,--no-undefined"]
+
+if OS32:
+    CFLAGS += " -m32"
+    LINKFLAGS.append("-m32")
+if OS64:
+    CFLAGS += " -m64"
+    LINKFLAGS.append("-m64")
+
+CPPDEFINES = {
+     'BOOST_ALL_NO_LIB':None,
+     'LINUX_OS':None,
+     '_FILE_OFFSET_BITS':64,
+ }
+
+if DEBUG:
+    CPPDEFINES.update({'DEBUG':"1",})
+else:
+    CPPDEFINES.update({'NDEBUG':None,})
+
+CXXFLAGS = CFLAGS + " -Wno-reorder"
+
+CC = os.environ.get("CC", "gcc")
+CXX = os.environ.get("CXX", "g++")
+
+if GCC:
+    if GCC == 46:
+        CC="gcc-4.4"
+        CXX="g++-4.4"
+    elif GCC == 45:
+        CC="gcc-4.4"
+        CXX="g++-4.4"
+    elif GCC == 44:
+        CC="gcc-4.4"
+        CXX="g++-4.4"
+    elif GCC == 43:
+        CC="gcc-4.3"
+        CXX="g++-4.3"
+    elif GCC == 42:
+        CC="gcc-4.2"
+        CXX="g++-4.2"
+    elif GCC == 41:
+        CC="gcc-4.1"
+        CXX="g++-4.1"
+    elif GCC == 40:
+        CC="gcc-4.0"
+        CXX="g++-4.0"
+
+class CustomEnvironment(SConsEnvironment):
+
+    
+    def ObjFiles(self, component_name, sources):
+        objs = []
+        for cpp_list in sources:
+            if type(cpp_list) == type([]):
+                for cpp in cpp_list:
+                    base, ext = os.path.splitext(os.path.normpath(cpp.abspath))
+                    object = '${BUILD_DIR}/%s_build/%s' % (component_name, os.path.basename(base))
+                    o = self.SharedObject(object, cpp)
+                    objs.append(o[0])
+            else:
+                cpp = cpp_list
+                if type(cpp) == type(""):
+                    cpp = self.File(cpp)
+                base, ext = os.path.splitext(os.path.normpath(cpp.abspath))
+                object = '${BUILD_DIR}/%s_build/%s' % (component_name, os.path.basename(base))
+                o = self.SharedObject(object, cpp)
+                objs.append(o[0])
+        return objs
+    
+    
+    def CustomProgram(self, progname=None, sources=[]):
+        objs = self.ObjFiles(progname, sources)
+        progname = self.File('${BUILD_DIR}/%s' % progname)
+        prog = self.Program(progname, source=objs)
+        SConsEnvironment.Default(self, prog)
+        
+        return prog
+
+
+env = CustomEnvironment(CC=CC, CXX=CXX, CFLAGS=CFLAGS, CXXFLAGS=CXXFLAGS,
+                  LINKFLAGS=LINKFLAGS, CPPDEFINES=CPPDEFINES,
+                  SRC_ROOT=SRC_ROOT, OS64=OS64, OS32=OS32,
+                  TOP_DIR=TOP_DIR,
+                  BUILD_TARGET=BUILD_TARGET,
+                  BUILD_PLATFORM=BUILD_PLATFORM,
+                  BUILD_BITS=BUILD_BITS,
+                  BUILD_DIR=BUILD_DIR)
+
+gcc_version = get_cc_version(CC)
+cpp_version = get_cc_version(CXX)
+
+BUILD_PLATFORM = BUILD_PLATFORM + "-g++-%d.%d.%d" % cpp_version
+env.Replace(BUILD_PLATFORM=BUILD_PLATFORM)
+
+env.Append(LIBPATH=["${BUILD_DIR}"])
+
+env.SConsignFile(env.File('$BUILD_DIR/.sconsign').abspath)
+env.CacheDir(env.Dir('$BUILD_DIR/scons_cache').abspath)
+
+Export('env')
+
+topmake = env.SConscript('SConscript')
+
+Default(Alias('all', [topmake]))
