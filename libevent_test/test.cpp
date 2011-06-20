@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <event2/event.h>
+#include <event2/thread.h>
 #include <iostream>
 
 static event_base *base;
@@ -33,6 +34,28 @@ int main(int argc, char*argv[])
   printf("Hello, world!\n");
 
   event_config *conf = event_config_new();
+
+#ifdef WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+/* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0) {
+        /* Tell the user that we could not find a usable */
+        /* Winsock DLL.                                  */
+        printf("WSAStartup failed with error: %d\n", err);
+        return 1;
+    }
+
+	evthread_use_windows_threads();
+
+	event_config_set_flag(conf, EVENT_BASE_FLAG_STARTUP_IOCP);
+#endif
+
   base = event_base_new_with_config(conf);
   const char ** methods = event_get_supported_methods();
 

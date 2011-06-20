@@ -1,5 +1,7 @@
 import sys
 
+DEBUG=1
+
 if sys.platform == 'win32':
     LIBEVENT = 'J:/sources/libevent/'
 else:
@@ -15,7 +17,7 @@ cpppath = [
 
 cppdefines = {
      'BOOST_ALL_NO_LIB':None,
- }
+}
 
 if sys.platform == 'win32':
     cpppath += [
@@ -25,7 +27,7 @@ if sys.platform == 'win32':
          'WIN32':None,
     })
     libpath = [
-        LIBEVENT,
+        LIBEVENT + 'build/vc10/x64/' + ('Debug' if DEBUG else 'Release'),
     ]
     libs = [
         'libevent',
@@ -43,8 +45,34 @@ env = Environment(CPPPATH=cpppath, CPPDEFINES=cppdefines,
                   LIBPATH=libpath, LIBS=libs)
 
 if sys.platform != 'win32':
-    env.Append(CCFLAGS="-g")
-    env.Append(CFLAGS="-g")
-    env.Append(LINKFLAGS="-g")
+    env.Append(CCFLAGS="-g", CFLAGS="-g", LINKFLAGS="-g")
+else:
+    env.Append(CCFLAGS=['$DIALECTFLAGS', '$WARNINGFLAGS'])
+    env.Append(CXXFLAGS=['$CCFLAGS', '/GR', '/Gy', '/EHsc'])
+    env.Append(LINKFLAGS=['/INCREMENTAL:NO', '/NXCOMPAT'])
+    env.Append(CCPDBFLAGS=['/Zi'])
+    env.Append(CCPDBFLAGS=['/nologo'])
+    
+    if 0:
+        env.Append(LINKFLAGS=['/MACHINE:X86'])
+        env.Append(ARFLAGS=['/MACHINE:X86'])
+    else:
+        env.Append(LINKFLAGS=['/MACHINE:X64'])
+        env.Append(ARFLAGS=['/MACHINE:X64'])
+
+    if DEBUG:
+        env.Append(CCFLAGS=['/Od', '/Gm', '/MDd']) # '/MTd'
+        env.Append(CPPDEFINES={
+            '_DEBUG' : 1,
+            'DEBUG' : 1,
+        })
+        env.Append(LINKFLAGS=['/DEBUG'])
+    else:
+        env.Append(CCFLAGS=['/O2', '/MD']) # '/MT'
+        env.Append(CPPDEFINES={
+            'NDEBUG' : None,
+        })
+        env.Append(LINKFLAGS=['/OPT:REF', '/OPT:ICF'])
+    
 
 env.Program('test', src)
