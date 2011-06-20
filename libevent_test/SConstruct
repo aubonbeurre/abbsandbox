@@ -1,22 +1,50 @@
+import sys
+
+if sys.platform == 'win32':
+    LIBEVENT = 'J:/sources/libevent/'
+else:
+    LIBEVENT = '/usr/local/libevent-2.0.12/'
+
 src = [
      'test.cpp',
 ]
 
 cpppath = [
-    '/usr/local/libevent-2.0.12/include',
+    LIBEVENT + 'include',
 ]
 
-libpath = [
-    '/usr/local/libevent-2.0.12/lib',
-]
+cppdefines = {
+     'BOOST_ALL_NO_LIB':None,
+ }
 
-libs = [
-    'event',
-]
+if sys.platform == 'win32':
+    cpppath += [
+        LIBEVENT + 'WIN32-Code',
+    ]
+    cppdefines.update({
+         'WIN32':None,
+    })
+    libpath = [
+        LIBEVENT,
+    ]
+    libs = [
+        'libevent',
+        'Ws2_32',
+    ]
+else:
+    libpath = [
+        LIBEVENT + 'lib',
+    ]
+    libs = [
+        'event',
+    ]
 
-env = Environment(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
-env.Append(CCFLAGS="-g")
-env.Append(CFLAGS="-g")
-env.Append(LINKFLAGS="-g")
+env = Environment(CPPPATH=cpppath, CPPDEFINES=cppdefines,
+                  LIBPATH=libpath, LIBS=libs)
+
+if sys.platform != 'win32':
+    env.Append(CCFLAGS="-g")
+    env.Append(CFLAGS="-g")
+    env.Append(LINKFLAGS="-g")
 
 env.Program('test', src)
