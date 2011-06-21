@@ -33,6 +33,15 @@
 
 #include "../gen-cpp/Calculator.h"
 
+#include <event2/event.h>
+#include <event2/thread.h>
+
+#ifdef WIN32
+#define snprintf _snprintf_c
+#endif
+
+static event_base *base;
+
 using namespace std;
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
@@ -115,52 +124,69 @@ protected:
 
 };
 
-int main(int argc, char **argv) {
+static void _log_cb(int severity, const char *msg) {
+	static const char* sev[4] = {
+	"DEBUG",
+	"INFO",
+	"WARN",
+	"ERROR"
+	};
+#ifdef _WIN32
+	int socket_errno = WSAGetLastError();
+#endif
+	std::cout << sev[severity] << ": " << msg << std::endl;
+}
 
-	shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-	shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
-	shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
+int main(int argc, char **argv) {
+  event_config *conf = event_config_new();
+
+#ifdef WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+/* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0) {
+        /* Tell the user that we could not find a usable */
+        /* Winsock DLL.                                  */
+        printf("WSAStartup failed with error: %d\n", err);
+        return 1;
+    }
+
+	evthread_use_windows_threads();
+
+	event_config_set_flag(conf, EVENT_BASE_FLAG_STARTUP_IOCP);
+#endif
+
+	base = event_base_new_with_config(conf);
+	const char ** methods = event_get_supported_methods();
+
+	std::cout << "Version: " << event_get_version() << std::endl;
+	std::cout << "Method: " << event_base_get_method(base) << std::endl;
+	std::cout << "Features: 0x" << std::hex << event_base_get_features(base) << std::endl;
+	std::cout << "Base: " << base << std::endl;
+	while(*methods) {
+		std::cout << "Method: " << *methods++ << std::endl;
+	}
+
+	event_set_log_callback(_log_cb);
+
+	boost::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+	boost::shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
+	boost::shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
 
 	// using thread pool with maximum 15 threads to handle incoming requests
-	shared_ptr<ThreadManager> threadManager =
+	boost::shared_ptr<ThreadManager> threadManager =
 			ThreadManager::newSimpleThreadManager(15);
-	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<
+	boost::shared_ptr<PosixThreadFactory> threadFactory = boost::shared_ptr<
 			PosixThreadFactory> (new PosixThreadFactory());
 	threadManager->threadFactory(threadFactory);
 	threadManager->start();
 
 	TNonblockingServer server(processor, protocolFactory, 9090, threadManager);
-
-	/*  shared_ptr<TServerTransport> serverTransport(new TServerSocket(9090));
-	 shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
-
-	 TSimpleServer server(processor,
-	 serverTransport,
-	 transportFactory,
-	 protocolFactory);
-	 */
-
-	/**
-	 * Or you could do one of these
-
-	 shared_ptr<ThreadManager> threadManager =
-	 ThreadManager::newSimpleThreadManager(workerCount);
-	 shared_ptr<PosixThreadFactory> threadFactory =
-	 shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
-	 threadManager->threadFactory(threadFactory);
-	 threadManager->start();
-	 TThreadPoolServer server(processor,
-	 serverTransport,
-	 transportFactory,
-	 protocolFactory,
-	 threadManager);
-
-	 TThreadedServer server(processor,
-	 serverTransport,
-	 transportFactory,
-	 protocolFactory);
-
-	 */
 
 	printf("Starting the server...\n");
 	server.serve();

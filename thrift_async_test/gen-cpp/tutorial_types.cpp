@@ -19,7 +19,7 @@ const char* _kOperationNames[] = {
   "MULTIPLY",
   "DIVIDE"
 };
-const std::map<int, const char*> _Operation_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(4, _kOperationValues, _kOperationNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
+//const std::map<int, const char*> _Operation_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(4, _kOperationValues, _kOperationNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
 
 const char* Work::ascii_fingerprint = "928D5DB19D957BA73E98532DF590DAF5";
 const uint8_t Work::binary_fingerprint[16] = {0x92,0x8D,0x5D,0xB1,0x9D,0x95,0x7B,0xA7,0x3E,0x98,0x53,0x2D,0xF5,0x90,0xDA,0xF5};

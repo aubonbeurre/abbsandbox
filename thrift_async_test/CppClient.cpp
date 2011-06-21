@@ -18,14 +18,23 @@
  */
 
 #include <stdio.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <sys/time.h>
+#endif
 
 #include <protocol/TBinaryProtocol.h>
 #include <transport/TSocket.h>
 #include <transport/TTransportUtils.h>
 
 #include "../gen-cpp/Calculator.h"
+
+#include <iostream>
+
+#include <event2/event.h>
+#include <event2/thread.h>
+
+static event_base *base;
 
 using namespace std;
 using namespace apache::thrift;
@@ -37,11 +46,60 @@ using namespace shared;
 
 using namespace boost;
 
+static void _log_cb(int severity, const char *msg) {
+	static const char* sev[4] = {
+	"DEBUG",
+	"INFO",
+	"WARN",
+	"ERROR"
+	};
+#ifdef _WIN32
+	int socket_errno = WSAGetLastError();
+#endif
+	std::cout << sev[severity] << ": " << msg << std::endl;
+}
+
 int main(int argc, char** argv) {
-	shared_ptr<TTransport> socket(new TSocket("localhost", 9090));
+  event_config *conf = event_config_new();
+
+#ifdef WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+/* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0) {
+        /* Tell the user that we could not find a usable */
+        /* Winsock DLL.                                  */
+        printf("WSAStartup failed with error: %d\n", err);
+        return 1;
+    }
+
+	evthread_use_windows_threads();
+
+	event_config_set_flag(conf, EVENT_BASE_FLAG_STARTUP_IOCP);
+#endif
+
+	base = event_base_new_with_config(conf);
+	const char ** methods = event_get_supported_methods();
+
+	std::cout << "Version: " << event_get_version() << std::endl;
+	std::cout << "Method: " << event_base_get_method(base) << std::endl;
+	std::cout << "Features: 0x" << std::hex << event_base_get_features(base) << std::endl;
+	std::cout << "Base: " << base << std::endl;
+	while(*methods) {
+		std::cout << "Method: " << *methods++ << std::endl;
+	}
+
+	event_set_log_callback(_log_cb);
+
+	boost::shared_ptr<TTransport> socket(new TSocket("localhost", 9090));
 	//shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-	shared_ptr<TTransport> transport(new TFramedTransport(socket));
-	shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
+	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
 	CalculatorClient client(protocol);
 

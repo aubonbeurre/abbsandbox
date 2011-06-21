@@ -335,6 +335,10 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
         CFLAGS = "${DIALECTFLAGS} ${WARNINGFLAGS}"
         CXXFLAGS = "${CFLAGS} /GR /Gy /EHsc"
         LINKFLAGS=['/INCREMENTAL:NO', '/NXCOMPAT']
+
+        CPPDEFINES.update({
+             'WIN32':None,
+         })
     else:
         CFLAGS = "-g" if DEBUG else "-O3"
         CXXFLAGS = "{$CFLAGS} -Wno-reorder"

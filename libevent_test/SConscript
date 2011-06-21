@@ -23,9 +23,6 @@ if sys.platform == 'win32':
     cpppath += [
         LIBEVENT + 'WIN32-Code',
     ]
-    cppdefines.update({
-         'WIN32':None,
-    })
     libpath = [
         LIBEVENT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
     ]

@@ -2,8 +2,15 @@ Import('env')
 
 import sys
 
-THRIFT="/usr/local/thrift-0.6.1/"
-LIBEVENT="/usr/local/libevent-2.0.12/"
+if sys.platform == 'win32':
+    THRIFT = "J:/sources/thrift/"
+    LIBEVENT = "J:/sources/libevent/"
+    BOOST_ROOT = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
+else:
+    THRIFT = "/usr/local/thrift-0.6.1/"
+    LIBEVENT = "/usr/local/libevent-2.0.12/"
+    BOOST_ROOT = "/usr/local/boost_1_44_0/"
+
 SRC_ROOT = env['SRC_ROOT']
 
 gensrc = [
@@ -17,25 +24,53 @@ gensrc = [
 
 cpppath = [
     SRC_ROOT + "gen-cpp",
-    THRIFT + 'include/thrift',
     LIBEVENT + 'include',
 ]
 
-libpath = [
-    THRIFT + 'lib',
-    LIBEVENT + 'lib',
-]
+cppdefines = {
+     'BOOST_ALL_NO_LIB':None,
+     'HAVE_CONFIG_H':None,
+}
 
-libs = [
-    'thrift',
-    'thriftnb',
-    'event',
-]
+if sys.platform == 'win32':
+    libpath = [
+        LIBEVENT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
+        THRIFT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
+        THRIFT + 'build/${BUILD_PLATFORM}/%s/' % ("pthreadVC2" if env['OS32'] else "pthreadVC2_x64"),
+    ]
+    libs = [
+        'libevent',
+        'thriftnb',
+        'pthreadVC2' if env['OS32'] else 'pthreadVC2_x64',
+        'Ws2_32',
+    ]
+    cpppath += [
+        LIBEVENT + 'WIN32-Code',
+        LIBEVENT + 'compat',
+        LIBEVENT,
+        THRIFT + 'lib/cpp/src',
+        THRIFT + 'build/vc10',
+        BOOST_ROOT + 'boost/tr1',
+        BOOST_ROOT,
+    ]
+else:
+    libpath = [
+        THRIFT + 'lib',
+        LIBEVENT + 'lib',
+    ]
+    libs = [
+        'thrift',
+        'thriftnb',
+        'event',
+    ]
+    cpppath += [
+        THRIFT + 'include/thrift',
+    ]
 
-appclient = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
-                  includes=cpppath, libpath=libpath, libs=libs)
-appserver = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.cpp',],
-                  includes=cpppath, libpath=libpath, libs=libs)
+client = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
+                        defines=cppdefines, includes=cpppath, libpath=libpath, libs=libs)
+server = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.cpp',],
+                        defines=cppdefines, includes=cpppath, libpath=libpath, libs=libs)
 
 target = Alias('apps', [client, server])
 
