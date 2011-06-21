@@ -150,9 +150,10 @@ class AbbEnvironment(SConsEnvironment):
     def __add_MSVS(self, lenv, target, name, sources=None, includes=None):
         if sys.platform == 'win32':
             variant_plat = 'Win32' if lenv['OS32'] else 'x64'
-            variant=['Debug|' + variant_plat, 'Release|' + variant_plat]
+            variant=['Debug|' + variant_plat,] if lenv['DEBUG'] else ['Release|' + variant_plat,]
             
-            prj = lenv.MSVSProject(target=name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET'] + lenv['MSVSPROJECTSUFFIX'],
+            targetname = name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET']
+            prj = lenv.MSVSProject(target=targetname + lenv['MSVSPROJECTSUFFIX'],
                                              srcs=sources,
                                              incs=includes,
                                              misc=[],
@@ -162,7 +163,7 @@ class AbbEnvironment(SConsEnvironment):
                                              variant=variant)
             
             
-            sln = lenv.MSVSSolution(target=name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET'] + lenv['MSVSSOLUTIONSUFFIX'],
+            sln = lenv.MSVSSolution(target=targetname + lenv['MSVSSOLUTIONSUFFIX'],
                          projects=[prj],
                          variant=variant)
             
@@ -405,6 +406,7 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
             env['MSVSSCONSFLAGS'] = env['MSVSSCONSFLAGS'] + ' os32=1'
         else:
             env['MSVSSCONSFLAGS'] = env['MSVSSCONSFLAGS'] + ' os64=1'
+        #env['BUILD_MSVS'] = '${TOP_DIR}/build/${BUILD_PLATFORM}'
             
 
         env.Append(CCPDBFLAGS=['/Zi'])

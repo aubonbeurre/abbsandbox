@@ -7,5 +7,5 @@ sys.path.insert(0, pythonlib)
 
 import SCons.Script
 
-sys.argv += ("--no-cache",)
+sys.argv += ("--no-cache", "-C", os.path.dirname(thisfile))
 SCons.Script.main()
