@@ -355,6 +355,7 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
                   LINKFLAGS=LINKFLAGS, CPPDEFINES=CPPDEFINES,
                   SRC_ROOT=SRC_ROOT, OS64=OS64, OS32=OS32,
                   TOP_DIR=TOP_DIR,
+                  DEBUG=DEBUG,
                   BUILD_TARGET=BUILD_TARGET,
                   BUILD_PLATFORM=BUILD_PLATFORM,
                   BUILD_BITS=BUILD_BITS,
@@ -398,6 +399,14 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
     else:
         env['ENV']['TMP'] = os.path.dirname(tempfile.NamedTemporaryFile().name) # cl.exe
         
+        env['MSVSSCONS'] = sys.executable
+        env['MSVSSCONSFLAGS'] = rootdir + '/scons.py -f ${MSVSSCONSCRIPT.name} debug=${DEBUG}'
+        if OS32:
+            env['MSVSSCONSFLAGS'] = env['MSVSSCONSFLAGS'] + ' os32=1'
+        else:
+            env['MSVSSCONSFLAGS'] = env['MSVSSCONSFLAGS'] + ' os64=1'
+            
+
         env.Append(CCPDBFLAGS=['/Zi'])
         env.Append(CCPDBFLAGS=['/nologo'])
         env.Append(LINKFLAGS=['/nologo'])
