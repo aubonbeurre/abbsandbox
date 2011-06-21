@@ -1,3 +1,11 @@
 test
-*.o
 .sconsign.dblite
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.sdf
+Debug
+Release
+x64
