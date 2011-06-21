@@ -1,0 +1,47 @@
+Import('env')
+
+import sys
+
+if sys.platform == 'win32':
+    LIBEVENT = 'J:/sources/libevent/'
+else:
+    LIBEVENT = '/usr/local/libevent-2.0.12/'
+
+src = [
+     'test.cpp',
+]
+
+cpppath = [
+    LIBEVENT + 'include',
+]
+
+cppdefines = {
+     'BOOST_ALL_NO_LIB':None,
+}
+
+if sys.platform == 'win32':
+    cpppath += [
+        LIBEVENT + 'WIN32-Code',
+    ]
+    cppdefines.update({
+         'WIN32':None,
+    })
+    libpath = [
+        LIBEVENT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
+    ]
+    libs = [
+        'libevent',
+        'Ws2_32',
+    ]
+else:
+    libpath = [
+        LIBEVENT + 'lib',
+    ]
+    libs = [
+        'event',
+    ]
+
+app = env.AbbProg(progname="test", sources=src, includes=cpppath, defines=cppdefines,
+                  libpath=libpath, libs=libs)
+
+Return('app')

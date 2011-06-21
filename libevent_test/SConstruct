@@ -1,131 +1,30 @@
+import platform
+import subprocess
+import re
+import os
 import sys
-import os.path
-import tempfile
 
-DEBUG=int(ARGUMENTS.get('debug', 1))
-OS32=int(ARGUMENTS.get('os32', 0))
+import abb.scons.builder as abbb
 
-if sys.platform == 'win32':
-    LIBEVENT = 'J:/sources/libevent/'
-else:
-    LIBEVENT = '/usr/local/libevent-2.0.12/'
+# Set the default -j value based on the number of processors.
+SetOption('num_jobs', abbb.GetProcessorCount() + 1)
 
-src = [
-     'test.cpp',
-]
+# Have SCons use its cached dependency information.
+SetOption('implicit_cache', 1)
 
-cpppath = [
-    LIBEVENT + 'include',
-]
+# Only re-calculate MD5 checksums if a timestamp has changed.
+Decider('MD5-timestamp')
 
-cppdefines = {
-     'BOOST_ALL_NO_LIB':None,
-}
+# Since we set the -j value by default, suppress SCons warnings about being
+# unable to support parallel build on versions of Python with no threading.
+default_warnings = ['no-no-parallel-support']
+SetOption('warn', default_warnings + GetOption('warn'))
 
-if sys.platform == 'win32':
-    cpppath += [
-        LIBEVENT + 'WIN32-Code',
-    ]
-    cppdefines.update({
-         'WIN32':None,
-    })
-    libpath = [
-        LIBEVENT + 'build/${LIBEVENT_SUBFOLDER}',
-    ]
-    libs = [
-        'libevent',
-        'Ws2_32',
-    ]
-else:
-    libpath = [
-        LIBEVENT + 'lib',
-    ]
-    libs = [
-        'event',
-    ]
-
-env = Environment(CPPPATH=cpppath, CPPDEFINES=cppdefines,
-                  LIBPATH=libpath, LIBS=libs, TARGET_ARCH=("x86" if OS32 else "amd64"))
-
-if sys.platform != 'win32':
-    env.Append(CCFLAGS="-g", CFLAGS="-g", LINKFLAGS="-g")
-    cc_version = "gcc"
-else:
-    env['ENV']['TMP'] = os.path.dirname(tempfile.NamedTemporaryFile().name) # cl.exe
-
-    env.Append(CCFLAGS=['$DIALECTFLAGS', '$WARNINGFLAGS'])
-    env.Append(CXXFLAGS=['$CCFLAGS', '/GR', '/Gy', '/EHsc'])
-    env.Append(LINKFLAGS=['/INCREMENTAL:NO', '/NXCOMPAT'])
-    env.Append(CCPDBFLAGS=['/Zi'])
-    env.Append(CCPDBFLAGS=['/nologo'])
-    
-    cc_version = 'vc' + str(int(float(env['MSVS_VERSION'])))
-    env['LIBEVENT_SUBFOLDER'] = cc_version + '/%s${BUILD_TARGET}' % ("" if OS32 else "x64/")
-
-env['BUILD_CC_VERSION'] = cc_version
-
-def param_target(env, is32, isDbg):
-    env['BUILD_TARGET'] = "Debug" if isDbg else "Release"
-    
-    if sys.platform == 'win32':
-        if is32:
-            env.Append(LINKFLAGS=['/MACHINE:X86'])
-            env.Append(ARFLAGS=['/MACHINE:X86'])
-        else:
-            env.Append(LINKFLAGS=['/MACHINE:X64'])
-            env.Append(ARFLAGS=['/MACHINE:X64'])
-    
-        if isDbg:
-            env.Append(CCFLAGS=['/Od', '/Gm', '/MDd']) # '/MTd'
-            env.Append(CPPDEFINES={
-                '_DEBUG' : 1,
-                'DEBUG' : 1,
-            })
-            env.Append(LINKFLAGS=['/DEBUG'])
-        else:
-            env.Append(CCFLAGS=['/O2', '/MD']) # '/MT'
-            env.Append(CPPDEFINES={
-                'NDEBUG' : None,
-            })
-            env.Append(LINKFLAGS=['/OPT:REF', '/OPT:ICF'])
-
-apps = []
-component_name = "test"
 dir = Dir('.')
+env = abbb.CreateAbbEnvironment(dir.abspath, ARGUMENTS)
 
-env['TOP_DIR'] = dir.abspath
-env['BUILD_BITS'] = "32" if OS32 else "64"
-env['BUILD_DIR'] = '${TOP_DIR}/targets/${BUILD_CC_VERSION}/${BUILD_BITS}/${BUILD_TARGET}'
+Export('env')
 
-for isDbg in (1, 0):
-    lenv = env.Clone()
-    param_target(lenv, OS32, isDbg)
-    
-    objs = []
-    for cpp in src:
-        cpp = env.File(cpp)
-        base, ext = os.path.splitext(os.path.normpath(cpp.abspath))
-        object = '${BUILD_DIR}/%s_build/%s' % (component_name, os.path.basename(base))
-        o = lenv.Object(object, cpp)
-        objs.append(o[0])
+topmake = env.SConscript('SConscript')
 
-    app = lenv.Program('${BUILD_DIR}/test', source=objs)
-    apps.append(app[0])
-
-if sys.platform == 'win32':
-    variant_plat = 'Win32' if OS32 else 'x64'
-    variant=['Debug|' + variant_plat, 'Release|' + variant_plat]
-    
-    prj = lenv.MSVSProject(target=component_name + env['BUILD_BITS'] + env['MSVSPROJECTSUFFIX'],
-                                     srcs=src,
-                                     incs=[],
-                                     misc=[],
-                                     resources=[],
-                                     buildtarget=apps,
-                                     auto_build_solution=0,
-                                     variant=variant)
-    
-    
-    env.MSVSSolution(target=component_name + env['BUILD_BITS'] + env['MSVSSOLUTIONSUFFIX'],
-                 projects=[prj],
-                 variant=variant)
+Default(Alias('all', [topmake]))
