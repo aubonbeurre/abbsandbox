@@ -1,5 +1,7 @@
 Import('env')
 
+import sys
+
 THRIFT="/usr/local/thrift-0.6.1/"
 LIBEVENT="/usr/local/libevent-2.0.12/"
 SRC_ROOT = env['SRC_ROOT']
@@ -30,10 +32,10 @@ libs = [
     'event',
 ]
 
-env = env.Clone(CPPPATH=cpppath, LIBPATH=libpath, LIBS=libs)
-
-client = env.CustomProgram('client', gensrc + [SRC_ROOT + 'CppClient.cpp',])
-server = env.CustomProgram('server', gensrc + [SRC_ROOT + 'CppServer.cpp',])
+appclient = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
+                  includes=cpppath, libpath=libpath, libs=libs)
+appserver = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.cpp',],
+                  includes=cpppath, libpath=libpath, libs=libs)
 
 target = Alias('apps', [client, server])
 
