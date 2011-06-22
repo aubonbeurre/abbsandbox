@@ -5,13 +5,12 @@ import sys
 if sys.platform == 'win32':
     THRIFT = "J:/sources/thrift/"
     LIBEVENT = "J:/sources/libevent/"
-    BOOST_ROOT = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
 else:
     THRIFT = "/usr/local/thrift-0.6.1/"
     LIBEVENT = "/usr/local/libevent-2.0.12/"
-    BOOST_ROOT = "/usr/local/boost_1_44_0/"
 
 SRC_ROOT = env['SRC_ROOT']
+BOOST_ROOT = env['BOOST_ROOT']
 JPEG_ROOT = SRC_ROOT + '../lib/libjpeg/'
 
 gensrc = [
@@ -58,6 +57,10 @@ if sys.platform == 'win32':
         BOOST_ROOT + 'boost/tr1',
         BOOST_ROOT,
     ]
+    cppdefines.update({
+        "_SCL_SECURE_NO_WARNINGS" : "1",
+        "_SECURE_SCL" : "0",
+    })
 else:
     libpath = [
         THRIFT + 'lib',
@@ -75,6 +78,7 @@ else:
 
 deps = [
     'myjpeg',
+    'boost_filesystem',
 ]
 
 client = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],

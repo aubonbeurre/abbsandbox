@@ -22,7 +22,8 @@ struct Transform {
     TRANSPOSE = 3,
     ROTATE90CW = 4,
     ROTATE90CCW = 5,
-    ROTATE180 = 6
+    ROTATE180 = 6,
+    XGRADIENT = 7
   };
 };
 

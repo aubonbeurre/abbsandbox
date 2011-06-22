@@ -13,7 +13,8 @@ enum Transform {
   TRANSPOSE = 3,
   ROTATE90CW = 4,
   ROTATE90CCW = 5,
-  ROTATE180 = 6
+  ROTATE180 = 6,
+  XGRADIENT = 7
 }
 
 exception InvalidOperation {
@@ -32,5 +33,4 @@ service Imaging {
 
    binary mandelbrot(1:i32 w, 2:i32 h) throws (1:InvalidOperation ouch),
    binary transform(1:Transform t, 2:binary img) throws (1:InvalidOperation ouch),
-   binary xgradient(1:Transform t, 2:binary img) throws (1:InvalidOperation ouch),
 }

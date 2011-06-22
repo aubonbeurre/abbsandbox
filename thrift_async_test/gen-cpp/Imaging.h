@@ -16,7 +16,6 @@ class ImagingIf {
   virtual ~ImagingIf() {}
   virtual void mandelbrot(std::string& _return, const int32_t w, const int32_t h) = 0;
   virtual void transform(std::string& _return, const Transform::type t, const std::string& img) = 0;
-  virtual void xgradient(std::string& _return, const Transform::type t, const std::string& img) = 0;
 };
 
 class ImagingNull : virtual public ImagingIf {
@@ -26,9 +25,6 @@ class ImagingNull : virtual public ImagingIf {
     return;
   }
   void transform(std::string& /* _return */, const Transform::type /* t */, const std::string& /* img */) {
-    return;
-  }
-  void xgradient(std::string& /* _return */, const Transform::type /* t */, const std::string& /* img */) {
     return;
   }
 };
@@ -255,117 +251,6 @@ class Imaging_transform_presult {
 
 };
 
-typedef struct _Imaging_xgradient_args__isset {
-  _Imaging_xgradient_args__isset() : t(false), img(false) {}
-  bool t;
-  bool img;
-} _Imaging_xgradient_args__isset;
-
-class Imaging_xgradient_args {
- public:
-
-  Imaging_xgradient_args() : img("") {
-  }
-
-  virtual ~Imaging_xgradient_args() throw() {}
-
-  Transform::type t;
-  std::string img;
-
-  _Imaging_xgradient_args__isset __isset;
-
-  bool operator == (const Imaging_xgradient_args & rhs) const
-  {
-    if (!(t == rhs.t))
-      return false;
-    if (!(img == rhs.img))
-      return false;
-    return true;
-  }
-  bool operator != (const Imaging_xgradient_args &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const Imaging_xgradient_args & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-
-class Imaging_xgradient_pargs {
- public:
-
-
-  virtual ~Imaging_xgradient_pargs() throw() {}
-
-  const Transform::type* t;
-  const std::string* img;
-
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _Imaging_xgradient_result__isset {
-  _Imaging_xgradient_result__isset() : success(false), ouch(false) {}
-  bool success;
-  bool ouch;
-} _Imaging_xgradient_result__isset;
-
-class Imaging_xgradient_result {
- public:
-
-  Imaging_xgradient_result() : success("") {
-  }
-
-  virtual ~Imaging_xgradient_result() throw() {}
-
-  std::string success;
-  InvalidOperation ouch;
-
-  _Imaging_xgradient_result__isset __isset;
-
-  bool operator == (const Imaging_xgradient_result & rhs) const
-  {
-    if (!(success == rhs.success))
-      return false;
-    if (!(ouch == rhs.ouch))
-      return false;
-    return true;
-  }
-  bool operator != (const Imaging_xgradient_result &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const Imaging_xgradient_result & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _Imaging_xgradient_presult__isset {
-  _Imaging_xgradient_presult__isset() : success(false), ouch(false) {}
-  bool success;
-  bool ouch;
-} _Imaging_xgradient_presult__isset;
-
-class Imaging_xgradient_presult {
- public:
-
-
-  virtual ~Imaging_xgradient_presult() throw() {}
-
-  std::string* success;
-  InvalidOperation ouch;
-
-  _Imaging_xgradient_presult__isset __isset;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-
-};
-
 class ImagingClient : virtual public ImagingIf {
  public:
   ImagingClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -392,9 +277,6 @@ class ImagingClient : virtual public ImagingIf {
   void transform(std::string& _return, const Transform::type t, const std::string& img);
   void send_transform(const Transform::type t, const std::string& img);
   void recv_transform(std::string& _return);
-  void xgradient(std::string& _return, const Transform::type t, const std::string& img);
-  void send_xgradient(const Transform::type t, const std::string& img);
-  void recv_xgradient(std::string& _return);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -410,13 +292,11 @@ class ImagingProcessor : virtual public ::apache::thrift::TProcessor {
   std::map<std::string, void (ImagingProcessor::*)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*)> processMap_;
   void process_mandelbrot(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_transform(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
-  void process_xgradient(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   ImagingProcessor(boost::shared_ptr<ImagingIf> iface) :
     iface_(iface) {
     processMap_["mandelbrot"] = &ImagingProcessor::process_mandelbrot;
     processMap_["transform"] = &ImagingProcessor::process_transform;
-    processMap_["xgradient"] = &ImagingProcessor::process_xgradient;
   }
 
   virtual bool process(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot, void* callContext);
@@ -455,18 +335,6 @@ class ImagingMultiface : virtual public ImagingIf {
         return;
       } else {
         ifaces_[i]->transform(_return, t, img);
-      }
-    }
-  }
-
-  void xgradient(std::string& _return, const Transform::type t, const std::string& img) {
-    uint32_t sz = ifaces_.size();
-    for (uint32_t i = 0; i < sz; ++i) {
-      if (i == sz - 1) {
-        ifaces_[i]->xgradient(_return, t, img);
-        return;
-      } else {
-        ifaces_[i]->xgradient(_return, t, img);
       }
     }
   }

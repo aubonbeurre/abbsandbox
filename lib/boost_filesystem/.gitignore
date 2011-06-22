@@ -1,0 +1,15 @@
+.sconsign.dblite
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.sdf
+*.opensdf
+Debug
+Release
+x64
+vc100.idb
+vc100.pdb
+build
+targets

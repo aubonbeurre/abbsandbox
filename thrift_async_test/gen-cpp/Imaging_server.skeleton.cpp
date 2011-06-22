@@ -32,11 +32,6 @@ class ImagingHandler : virtual public ImagingIf {
     printf("transform\n");
   }
 
-  void xgradient(std::string& _return, const Transform::type t, const std::string& img) {
-    // Your implementation goes here
-    printf("xgradient\n");
-  }
-
 };
 
 int main(int argc, char **argv) {

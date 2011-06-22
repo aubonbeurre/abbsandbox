@@ -25,7 +25,13 @@ env = abbb.CreateAbbEnvironment(dir.abspath, ARGUMENTS)
 
 Export('env')
 
+if sys.platform == 'win32':
+    env['BOOST_ROOT'] = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
+else:
+    env['BOOST_ROOT'] = "/usr/local/boost_1_44_0/"
+
 topmake = env.SConscript('SConscript')
 jpeg = env.SConscript('../lib/libjpeg/SConscript')
+boost_filesystem = env.SConscript('../lib/boost_filesystem/SConscript')
 
-Default(Alias('all', [topmake, jpeg]))
+Default(Alias('all', [topmake, jpeg, boost_filesystem]))

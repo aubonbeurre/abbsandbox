@@ -1,0 +1,33 @@
+Import('env')
+
+BOOST_ROOT = env["BOOST_ROOT"]
+boost_version = env.boost_version()
+
+FILESYSTEM_VERSION = ""
+FILESYSTEM_PREFIX = ""
+if boost_version[1] >= 44:
+    FILESYSTEM_VERSION = "/v2/"
+    FILESYSTEM_PREFIX = "v2_"
+
+BOOST_FILESYSTEM = [
+    BOOST_ROOT + 'libs/filesystem/' + FILESYSTEM_VERSION + 'src/' + FILESYSTEM_PREFIX + 'operations.cpp',
+    BOOST_ROOT + 'libs/filesystem/'+ FILESYSTEM_VERSION + 'src/' + FILESYSTEM_PREFIX + 'path.cpp',
+    BOOST_ROOT + 'libs/system/src/error_code.cpp',
+]
+
+if boost_version[1] >= 44:
+    BOOST_FILESYSTEM += [
+        BOOST_ROOT + 'libs/filesystem/' + FILESYSTEM_VERSION + 'src/' + FILESYSTEM_PREFIX + 'portability.cpp',
+    ]
+
+cppdefines = {
+     'BOOST_ALL_NO_LIB':None,
+     'HAVE_CONFIG_H':None,
+}
+
+target = env.AbbSharedObj("boost_filesystem",
+                             sources=BOOST_FILESYSTEM,
+                             includes=[env["BOOST_ROOT"],],
+                             defines=cppdefines)
+
+Return("target")

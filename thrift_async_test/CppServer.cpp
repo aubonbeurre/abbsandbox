@@ -33,8 +33,11 @@
 
 #include <boost/gil/gil_all.hpp>
 #include <boost/gil/extension/io/jpeg_dynamic_io.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
-#include "../gen-cpp/Calculator.h"
+//#include "gen-cpp/Calculator.h"
+#include "gen-cpp/Imaging.h"
 
 #include <event2/event.h>
 #include <event2/thread.h>
@@ -52,11 +55,35 @@ using namespace apache::thrift::transport;
 using namespace apache::thrift::server;
 using namespace apache::thrift::concurrency;
 
-using namespace tutorial;
-using namespace shared;
+//using namespace tutorial;
+//using namespace shared;
+using namespace imaging;
 
 using namespace boost;
 using namespace boost::gil;
+
+#ifdef _WIN32
+static void get_tmp_filename(char *filename, int size)
+{
+    char temp_dir[MAX_PATH];
+
+    GetTempPathA(MAX_PATH, temp_dir);
+    GetTempFileNameA(temp_dir, "qem", 0, filename);
+}
+#else
+static void get_tmp_filename(char *filename, int size)
+{
+    int fd;
+    const char *tmpdir;
+    /* XXX: race condition possible */
+    tmpdir = getenv("TMPDIR");
+    if (!tmpdir)
+        tmpdir = "/tmp";
+    snprintf(filename, size, "%s/vl.XXXXXX", tmpdir);
+    fd = mkstemp(filename);
+    close(fd);
+}
+#endif
 
 // models PixelDereferenceAdaptorConcept
 struct mandelbrot_fn {
@@ -117,19 +144,133 @@ void x_gradient(const SrcView& src, const DstView& dst) {
     }
 }
 
-static void test_mandelbrot() {
-	point_t dims(200,200);
+class ImagingHandler: public ImagingIf {
+public:
+	ImagingHandler() {
+	}
 
-	// Construct a Mandelbrot view with a locator, taking top-left corner (0,0) and step (1,1)
-	my_virt_view_t mandel(dims, locator_t(point_t(0,0), point_t(1,1), mandelbrot_fn(dims)));
+
+	virtual void mandelbrot(std::string& _return, const int32_t w, const int32_t h) {
+		try {
+			// Construct a Mandelbrot view with a locator, taking top-left corner (0,0) and step (1,1)
+			point_t dims(w, h);
+			my_virt_view_t mandel(dims, locator_t(point_t(0,0), point_t(1,1), mandelbrot_fn(dims)));
 	
-	gray8_image_t ccv_image(mandel.dimensions());
-	x_gradient(mandel, view(ccv_image));
+			returnDeleteView(mandel, _return);
+		} catch(std::exception& e) {
+			InvalidOperation io;
+			io.what = 0;
+			io.why = e.what();
+			throw io;
+		} catch(...) {
+			InvalidOperation io;
+			io.what = 0;
+			io.why = "Unknown excpetion";
+			throw io;
+		}
+	}
 
-	jpeg_write_view("J:\\mandel.jpg", mandel);
-	jpeg_write_view("J:\\mandel_grad.jpg", const_view(ccv_image));
-}
+	template <typename Img>
+	void copy_transform(const Img& srcimg, const Transform::type t, Img& dstimg) {
+		typedef typename Img::const_view_t          src_cview_t;
+			
+		src_cview_t src_view = const_view(srcimg);
+		switch(t) {
+			case Transform::UPDOWN:
+				dstimg = Img(src_view.dimensions());
+				copy_pixels(flipped_up_down_view(src_view), view(dstimg));
+				break;
+			case Transform::LEFTRIGHT:
+				dstimg = Img(src_view.dimensions());
+				copy_pixels(flipped_left_right_view(src_view), view(dstimg));
+				break;
+			case Transform::TRANSPOSE:
+				dstimg = Img(src_view.dimensions().y, src_view.dimensions().x);
+				copy_pixels(transposed_view(src_view), view(dstimg));
+				break;
+			case Transform::ROTATE90CW:
+				dstimg = Img(src_view.dimensions().y, src_view.dimensions().x);
+				copy_pixels(rotated90cw_view(src_view), view(dstimg));
+				break;
+			case Transform::ROTATE90CCW:
+				dstimg = Img(src_view.dimensions().y, src_view.dimensions().x);
+				copy_pixels(rotated90ccw_view(src_view), view(dstimg));
+				break;
+			case Transform::ROTATE180:
+				dstimg = Img(src_view.dimensions());
+				copy_pixels(rotated180_view(src_view), view(dstimg));
+				break;
+			case Transform::XGRADIENT:
+				dstimg = Img(src_view.dimensions());
+				x_gradient(src_view, view(dstimg));
+				break;
+				
+		}
+	}
 
+	virtual void transform(std::string& _return, const Transform::type t, const std::string& img) {
+		try {
+			rgb8_image_t src_img = image_from_string(img) ;
+			rgb8_image_t dst_img;
+
+			copy_transform(src_img, t, dst_img);
+
+			returnDeleteView(view(dst_img), _return);
+		} catch(std::exception& e) {
+			InvalidOperation io;
+			io.what = 0;
+			io.why = e.what();
+			throw io;
+		} catch(...) {
+			InvalidOperation io;
+			io.what = 0;
+			io.why = "Unknown excpetion";
+			throw io;
+		}
+	}
+
+protected:
+	template <typename SrcView>
+	void returnDeleteView(const SrcView& v, std::string& _return) {
+		char temp_path[MAX_PATH];
+		get_tmp_filename(temp_path, MAX_PATH);
+		boost::filesystem::path jpegpath(temp_path);
+
+		jpeg_write_view(temp_path, v);
+
+		std::ifstream jpegIn( jpegpath.file_string().c_str(), std::ios::binary|std::ios::in);
+		jpegIn.seekg (0, std::ios::end);
+		size_t blob_size = jpegIn.tellg();
+		jpegIn.seekg (0, std::ios::beg);
+
+		if(blob_size) {
+			_return = std::string(blob_size, 0);
+			jpegIn.read(&*_return.begin(), blob_size);
+		}
+
+		boost::filesystem::remove(jpegpath);
+	}
+
+	rgb8_image_t image_from_string(const std::string& img) {
+		char temp_path[MAX_PATH];
+		get_tmp_filename(temp_path, MAX_PATH);
+		boost::filesystem::path jpegpath(temp_path);
+
+		std::ofstream jpegOut(temp_path, std::ios::out|std::ios::trunc|std::ios::binary);
+		jpegOut << img;
+		jpegOut.close();
+
+		rgb8_image_t image;
+		jpeg_read_and_convert_image(temp_path, image);
+
+		boost::filesystem::remove(jpegpath);
+		return image;
+	}
+
+};
+
+
+/*
 class CalculatorHandler: public CalculatorIf {
 public:
 	CalculatorHandler() {
@@ -199,6 +340,7 @@ protected:
 	map<int32_t, SharedStruct> log;
 
 };
+*/
 
 static void _log_cb(int severity, const char *msg) {
 	static const char* sev[4] = {
@@ -214,7 +356,6 @@ static void _log_cb(int severity, const char *msg) {
 }
 
 int main(int argc, char **argv) {
-	test_mandelbrot();
 	event_config *conf = event_config_new();
 
 #ifdef WIN32
@@ -252,8 +393,10 @@ int main(int argc, char **argv) {
 	event_set_log_callback(_log_cb);
 
 	boost::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-	boost::shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
-	boost::shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
+//	boost::shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
+//	boost::shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
+	boost::shared_ptr<ImagingHandler> handler(new ImagingHandler());
+	boost::shared_ptr<TProcessor> processor(new ImagingProcessor(handler));
 
 	// using thread pool with maximum 15 threads to handle incoming requests
 	boost::shared_ptr<ThreadManager> threadManager =

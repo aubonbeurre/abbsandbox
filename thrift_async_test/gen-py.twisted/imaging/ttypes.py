@@ -21,6 +21,7 @@ class Transform:
   ROTATE90CW = 4
   ROTATE90CCW = 5
   ROTATE180 = 6
+  XGRADIENT = 7
 
   _VALUES_TO_NAMES = {
     1: "UPDOWN",
@@ -29,6 +30,7 @@ class Transform:
     4: "ROTATE90CW",
     5: "ROTATE90CCW",
     6: "ROTATE180",
+    7: "XGRADIENT",
   }
 
   _NAMES_TO_VALUES = {
@@ -38,6 +40,7 @@ class Transform:
     "ROTATE90CW": 4,
     "ROTATE90CCW": 5,
     "ROTATE180": 6,
+    "XGRADIENT": 7,
   }
 
 

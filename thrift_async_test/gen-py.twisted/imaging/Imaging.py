@@ -40,14 +40,6 @@ class Iface(Interface):
     """
     pass
 
-  def xgradient(t, img):
-    """
-    Parameters:
-     - t
-     - img
-    """
-    pass
-
 
 class Client:
   implements(Iface)
@@ -137,43 +129,6 @@ class Client:
       return d.errback(result.ouch)
     return d.errback(TApplicationException(TApplicationException.MISSING_RESULT, "transform failed: unknown result"))
 
-  def xgradient(self, t, img):
-    """
-    Parameters:
-     - t
-     - img
-    """
-    self._seqid += 1
-    d = self._reqs[self._seqid] = defer.Deferred()
-    self.send_xgradient(t, img)
-    return d
-
-  def send_xgradient(self, t, img):
-    oprot = self._oprot_factory.getProtocol(self._transport)
-    oprot.writeMessageBegin('xgradient', TMessageType.CALL, self._seqid)
-    args = xgradient_args()
-    args.t = t
-    args.img = img
-    args.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def recv_xgradient(self, iprot, mtype, rseqid):
-    d = self._reqs.pop(rseqid)
-    if mtype == TMessageType.EXCEPTION:
-      x = TApplicationException()
-      x.read(iprot)
-      iprot.readMessageEnd()
-      return d.errback(x)
-    result = xgradient_result()
-    result.read(iprot)
-    iprot.readMessageEnd()
-    if result.success != None:
-      return d.callback(result.success)
-    if result.ouch != None:
-      return d.errback(result.ouch)
-    return d.errback(TApplicationException(TApplicationException.MISSING_RESULT, "xgradient failed: unknown result"))
-
 
 class Processor(TProcessor):
   implements(Iface)
@@ -183,7 +138,6 @@ class Processor(TProcessor):
     self._processMap = {}
     self._processMap["mandelbrot"] = Processor.process_mandelbrot
     self._processMap["transform"] = Processor.process_transform
-    self._processMap["xgradient"] = Processor.process_xgradient
 
   def process(self, iprot, oprot):
     (name, type, seqid) = iprot.readMessageBegin()
@@ -249,33 +203,6 @@ class Processor(TProcessor):
     except InvalidOperation, ouch:
       result.ouch = ouch
     oprot.writeMessageBegin("transform", TMessageType.REPLY, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def process_xgradient(self, seqid, iprot, oprot):
-    args = xgradient_args()
-    args.read(iprot)
-    iprot.readMessageEnd()
-    result = xgradient_result()
-    d = defer.maybeDeferred(self._handler.xgradient, args.t, args.img)
-    d.addCallback(self.write_results_success_xgradient, result, seqid, oprot)
-    d.addErrback(self.write_results_exception_xgradient, result, seqid, oprot)
-    return d
-
-  def write_results_success_xgradient(self, success, result, seqid, oprot):
-    result.success = success
-    oprot.writeMessageBegin("xgradient", TMessageType.REPLY, seqid)
-    result.write(oprot)
-    oprot.writeMessageEnd()
-    oprot.trans.flush()
-
-  def write_results_exception_xgradient(self, error, result, seqid, oprot):
-    try:
-      error.raiseException()
-    except InvalidOperation, ouch:
-      result.ouch = ouch
-    oprot.writeMessageBegin("xgradient", TMessageType.REPLY, seqid)
     result.write(oprot)
     oprot.writeMessageEnd()
     oprot.trans.flush()
@@ -542,148 +469,6 @@ class transform_result:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
     oprot.writeStructBegin('transform_result')
-    if self.success != None:
-      oprot.writeFieldBegin('success', TType.STRING, 0)
-      oprot.writeString(self.success)
-      oprot.writeFieldEnd()
-    if self.ouch != None:
-      oprot.writeFieldBegin('ouch', TType.STRUCT, 1)
-      self.ouch.write(oprot)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-    def validate(self):
-      return
-
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class xgradient_args:
-  """
-  Attributes:
-   - t
-   - img
-  """
-
-  thrift_spec = (
-    None, # 0
-    (1, TType.I32, 't', None, None, ), # 1
-    (2, TType.STRING, 'img', None, None, ), # 2
-  )
-
-  def __init__(self, t=None, img=None,):
-    self.t = t
-    self.img = img
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 1:
-        if ftype == TType.I32:
-          self.t = iprot.readI32();
-        else:
-          iprot.skip(ftype)
-      elif fid == 2:
-        if ftype == TType.STRING:
-          self.img = iprot.readString();
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('xgradient_args')
-    if self.t != None:
-      oprot.writeFieldBegin('t', TType.I32, 1)
-      oprot.writeI32(self.t)
-      oprot.writeFieldEnd()
-    if self.img != None:
-      oprot.writeFieldBegin('img', TType.STRING, 2)
-      oprot.writeString(self.img)
-      oprot.writeFieldEnd()
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
-    def validate(self):
-      return
-
-
-  def __repr__(self):
-    L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
-    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
-
-  def __eq__(self, other):
-    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
-
-  def __ne__(self, other):
-    return not (self == other)
-
-class xgradient_result:
-  """
-  Attributes:
-   - success
-   - ouch
-  """
-
-  thrift_spec = (
-    (0, TType.STRING, 'success', None, None, ), # 0
-    (1, TType.STRUCT, 'ouch', (InvalidOperation, InvalidOperation.thrift_spec), None, ), # 1
-  )
-
-  def __init__(self, success=None, ouch=None,):
-    self.success = success
-    self.ouch = ouch
-
-  def read(self, iprot):
-    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
-      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      return
-    iprot.readStructBegin()
-    while True:
-      (fname, ftype, fid) = iprot.readFieldBegin()
-      if ftype == TType.STOP:
-        break
-      if fid == 0:
-        if ftype == TType.STRING:
-          self.success = iprot.readString();
-        else:
-          iprot.skip(ftype)
-      elif fid == 1:
-        if ftype == TType.STRUCT:
-          self.ouch = InvalidOperation()
-          self.ouch.read(iprot)
-        else:
-          iprot.skip(ftype)
-      else:
-        iprot.skip(ftype)
-      iprot.readFieldEnd()
-    iprot.readStructEnd()
-
-  def write(self, oprot):
-    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
-      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
-      return
-    oprot.writeStructBegin('xgradient_result')
     if self.success != None:
       oprot.writeFieldBegin('success', TType.STRING, 0)
       oprot.writeString(self.success)
