@@ -1,0 +1,4 @@
+virtualenv myenv
+cd myenv
+source bin/activate
+pip -E . install boto twisted
