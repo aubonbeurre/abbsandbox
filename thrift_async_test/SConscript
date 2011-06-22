@@ -26,6 +26,8 @@ gensrc = [
 ]
 
 cpppath = [
+    BOOST_ROOT + 'boost/tr1',
+    BOOST_ROOT,
     SRC_ROOT + "gen-cpp",
     LIBEVENT + 'include',
     JPEG_ROOT,
@@ -54,8 +56,6 @@ if sys.platform == 'win32':
         LIBEVENT,
         THRIFT + 'lib/cpp/src',
         THRIFT + 'build/vc10',
-        BOOST_ROOT + 'boost/tr1',
-        BOOST_ROOT,
     ]
     cppdefines.update({
         "_SCL_SECURE_NO_WARNINGS" : "1",

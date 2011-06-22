@@ -28,7 +28,7 @@ Export('env')
 if sys.platform == 'win32':
     env['BOOST_ROOT'] = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
 else:
-    env['BOOST_ROOT'] = "/usr/local/boost_1_44_0/"
+    env['BOOST_ROOT'] = "/home/aparente/sources/boost/"
 
 topmake = env.SConscript('SConscript')
 jpeg = env.SConscript('../lib/libjpeg/SConscript')

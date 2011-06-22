@@ -30,6 +30,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <fstream>
 
 #include <boost/gil/gil_all.hpp>
 #include <boost/gil/extension/io/jpeg_dynamic_io.hpp>
@@ -44,6 +45,9 @@
 
 #ifdef WIN32
 #define snprintf _snprintf_c
+#define PATH_MAX MAX_PATH
+#else
+#include <unistd.h>
 #endif
 
 static event_base *base;
@@ -65,9 +69,9 @@ using namespace boost::gil;
 #ifdef _WIN32
 static void get_tmp_filename(char *filename, int size)
 {
-    char temp_dir[MAX_PATH];
+    char temp_dir[PATH_MAX];
 
-    GetTempPathA(MAX_PATH, temp_dir);
+    GetTempPathA(PATH_MAX, temp_dir);
     GetTempFileNameA(temp_dir, "qem", 0, filename);
 }
 #else
@@ -232,8 +236,8 @@ public:
 protected:
 	template <typename SrcView>
 	void returnDeleteView(const SrcView& v, std::string& _return) {
-		char temp_path[MAX_PATH];
-		get_tmp_filename(temp_path, MAX_PATH);
+		char temp_path[PATH_MAX];
+		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
 
 		jpeg_write_view(temp_path, v);
@@ -252,8 +256,8 @@ protected:
 	}
 
 	rgb8_image_t image_from_string(const std::string& img) {
-		char temp_path[MAX_PATH];
-		get_tmp_filename(temp_path, MAX_PATH);
+		char temp_path[PATH_MAX];
+		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
 
 		std::ofstream jpegOut(temp_path, std::ios::out|std::ios::trunc|std::ios::binary);
