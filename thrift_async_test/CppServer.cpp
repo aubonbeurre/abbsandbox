@@ -96,13 +96,38 @@ typedef mandelbrot_fn::point_t point_t;
 typedef virtual_2d_locator<mandelbrot_fn,false> locator_t;
 typedef image_view<locator_t> my_virt_view_t;
 
+template <typename Out>
+struct halfdiff_cast_channels {
+    template <typename T> Out operator()(const T& in1, const T& in2) const {
+        return Out((in1-in2)/2);
+    }
+};
+
+template <typename SrcView, typename DstView>
+void x_gradient(const SrcView& src, const DstView& dst) {
+    typedef typename channel_type<DstView>::type dst_channel_t;
+
+    for (int y=0; y<src.height(); ++y) {
+        typename SrcView::x_iterator src_it = src.row_begin(y);
+        typename DstView::x_iterator dst_it = dst.row_begin(y);
+
+        for (int x=1; x<src.width()-1; ++x)
+            static_transform(src_it[x-1], src_it[x+1], dst_it[x], 
+                               halfdiff_cast_channels<dst_channel_t>());
+    }
+}
+
 static void test_mandelbrot() {
 	point_t dims(200,200);
 
 	// Construct a Mandelbrot view with a locator, taking top-left corner (0,0) and step (1,1)
 	my_virt_view_t mandel(dims, locator_t(point_t(0,0), point_t(1,1), mandelbrot_fn(dims)));
+	
+	gray8_image_t ccv_image(mandel.dimensions());
+	x_gradient(mandel, view(ccv_image));
 
 	jpeg_write_view("J:\\mandel.jpg", mandel);
+	jpeg_write_view("J:\\mandel_grad.jpg", const_view(ccv_image));
 }
 
 class CalculatorHandler: public CalculatorIf {

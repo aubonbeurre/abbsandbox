@@ -17,10 +17,13 @@ JPEG_ROOT = SRC_ROOT + '../lib/libjpeg/'
 gensrc = [
      SRC_ROOT + 'gen-cpp/shared_constants.cpp',
      SRC_ROOT + 'gen-cpp/shared_types.cpp',
+     SRC_ROOT + 'gen-cpp/SharedService.cpp',
      SRC_ROOT + 'gen-cpp/tutorial_constants.cpp',
      SRC_ROOT + 'gen-cpp/tutorial_types.cpp',
      SRC_ROOT + 'gen-cpp/Calculator.cpp',
-     SRC_ROOT + 'gen-cpp/SharedService.cpp',
+     SRC_ROOT + 'gen-cpp/imaging_constants.cpp',
+     SRC_ROOT + 'gen-cpp/imaging_types.cpp',
+     SRC_ROOT + 'gen-cpp/Imaging.cpp',
 ]
 
 cpppath = [
