@@ -341,7 +341,7 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
          })
     else:
         CFLAGS = "-g" if DEBUG else "-O3"
-        CXXFLAGS = "{$CFLAGS} -Wno-reorder"
+        CXXFLAGS = "${CFLAGS} -Wno-reorder"
         LINKFLAGS = ["-Wl,--no-undefined"]
     
         if OS32:

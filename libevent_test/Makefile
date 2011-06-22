@@ -5,15 +5,15 @@ ifeq ($(GCC),)
 endif
 
 all:
-	scons --no-cache debug=1 gcc=$(GCC)
+	python scons.py --no-cache debug=1 gcc=$(GCC)
 
 release:
-	scons --no-cache debug=0 gcc=$(GCC)
+	python scons.py --no-cache debug=0 gcc=$(GCC)
 
 clean: clean-debug clean-release
 
 clean-debug:
-	scons --no-cache -c debug=1 
+	python scons.py --no-cache -c debug=1 
 
 clean-release:
-	scons --no-cache -c debug=0 
+	python scons.py --no-cache -c debug=0 
