@@ -160,7 +160,7 @@ public:
 			point_t dims(w, h);
 			my_virt_view_t mandel(dims, locator_t(point_t(0,0), point_t(1,1), mandelbrot_fn(dims)));
 	
-			returnDeleteView(mandel, _return);
+			view_to_string(mandel, _return);
 		} catch(std::exception& e) {
 			InvalidOperation io;
 			io.what = 0;
@@ -219,7 +219,7 @@ public:
 
 			copy_transform(src_img, t, dst_img);
 
-			returnDeleteView(view(dst_img), _return);
+			view_to_string(view(dst_img), _return);
 		} catch(std::exception& e) {
 			InvalidOperation io;
 			io.what = 0;
@@ -235,7 +235,7 @@ public:
 
 protected:
 	template <typename SrcView>
-	void returnDeleteView(const SrcView& v, std::string& _return) {
+	void view_to_string(const SrcView& v, std::string& _return) {
 		char temp_path[PATH_MAX];
 		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
