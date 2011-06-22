@@ -12,6 +12,7 @@ else:
     BOOST_ROOT = "/usr/local/boost_1_44_0/"
 
 SRC_ROOT = env['SRC_ROOT']
+JPEG_ROOT = SRC_ROOT + '../lib/libjpeg/'
 
 gensrc = [
      SRC_ROOT + 'gen-cpp/shared_constants.cpp',
@@ -25,6 +26,7 @@ gensrc = [
 cpppath = [
     SRC_ROOT + "gen-cpp",
     LIBEVENT + 'include',
+    JPEG_ROOT,
 ]
 
 cppdefines = {
@@ -67,10 +69,19 @@ else:
         THRIFT + 'include/thrift',
     ]
 
+
+deps = [
+    'myjpeg',
+]
+
 client = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
-                        defines=cppdefines, includes=cpppath, libpath=libpath, libs=libs)
+                        defines=cppdefines, includes=cpppath,
+                        libpath=libpath, libs=libs,
+                        deps=deps)
 server = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.cpp',],
-                        defines=cppdefines, includes=cpppath, libpath=libpath, libs=libs)
+                        defines=cppdefines, includes=cpppath,
+                        libpath=libpath, libs=libs,
+                        deps=deps)
 
 target = Alias('apps', [client, server])
 

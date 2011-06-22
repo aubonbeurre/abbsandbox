@@ -26,5 +26,6 @@ env = abbb.CreateAbbEnvironment(dir.abspath, ARGUMENTS)
 Export('env')
 
 topmake = env.SConscript('SConscript')
+jpeg = env.SConscript('../lib/libjpeg/SConscript')
 
-Default(Alias('all', [topmake]))
+Default(Alias('all', [topmake, jpeg]))

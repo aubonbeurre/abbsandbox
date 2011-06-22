@@ -147,10 +147,26 @@ class AbbEnvironment(SConsEnvironment):
             u(env, **kw)
 
 
+    @staticmethod
+    def __filter__source_abs_path(sources):
+        newsources = []
+        for s in sources:
+            if hasattr(s, "abspath"):
+                if s.sources:
+                    s = s.sources[0].abspath # object file
+                else:
+                    s = s.abspath
+            newsources.append(s)
+        return newsources
+
+
     def __add_MSVS(self, lenv, target, name, sources=None, includes=None):
         if sys.platform == 'win32':
             variant_plat = 'Win32' if lenv['OS32'] else 'x64'
             variant=['Debug|' + variant_plat,] if lenv['DEBUG'] else ['Release|' + variant_plat,]
+            
+            sources = self.__filter__source_abs_path(sources)
+            includes = self.__filter__source_abs_path(includes)
             
             targetname = name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET']
             prj = lenv.MSVSProject(target=targetname + lenv['MSVSPROJECTSUFFIX'],
@@ -177,8 +193,9 @@ class AbbEnvironment(SConsEnvironment):
 
         lenv = self.Clone()        
         self._apply_use(lenv, use, sources=sources, includes=includes, defines=defines)
-            
-        lib = lenv.Library(libname, source=sources)
+        
+        libfile = lenv.File('${BUILD_DIR}/${LIBPREFIX}%s${LIBSUFFIX}' % libname)
+        lib = lenv.Library(libfile, source=sources)
         SConsEnvironment.Default(self, lib) # we add to default target, because this way we get some kind of progress info during build
         
         if includes:
@@ -287,7 +304,7 @@ class AbbEnvironment(SConsEnvironment):
         
         objs = self.__AbbObjFiles(lenv, component_name, sources)
         
-        outputs = lenv.AbbLib(lenv.File('${BUILD_DIR}/${LIBPREFIX}%s${LIBSUFFIX}' % component_name), sources=objs)
+        outputs = lenv.AbbLib(component_name, sources=objs)
         outputs[0].attributes.shared = 1
         
         target = lenv.Alias(component_name, outputs)
