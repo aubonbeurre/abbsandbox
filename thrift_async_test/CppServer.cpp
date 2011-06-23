@@ -36,6 +36,7 @@
 #include <boost/gil/extension/io/jpeg_dynamic_io.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/thread/mutex.hpp>
 
 //#include "gen-cpp/Calculator.h"
 #include "gen-cpp/Imaging.h"
@@ -66,10 +67,12 @@ using namespace imaging;
 using namespace boost;
 using namespace boost::gil;
 
+static boost::mutex server_mutex;
+
 #ifdef _WIN32
 static void get_tmp_filename(char *filename, int size)
 {
-    char temp_dir[PATH_MAX];
+	char temp_dir[PATH_MAX];
 
     GetTempPathA(PATH_MAX, temp_dir);
     GetTempFileNameA(temp_dir, "qem", 0, filename);
@@ -77,6 +80,8 @@ static void get_tmp_filename(char *filename, int size)
 #else
 static void get_tmp_filename(char *filename, int size)
 {
+	boost::mutex::scoped_lock	lock(server_mutex);
+
     int fd;
     const char *tmpdir;
     /* XXX: race condition possible */
