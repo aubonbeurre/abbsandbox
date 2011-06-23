@@ -168,7 +168,7 @@ class AbbEnvironment(SConsEnvironment):
             sources = self.__filter__source_abs_path(sources)
             includes = self.__filter__source_abs_path(includes)
             
-            targetname = name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET']
+            targetname = "${TOP_DIR}/build/${BUILD_PLATFORM}/" + name + "_" + lenv['BUILD_BITS'] + "_" + lenv['BUILD_TARGET']
             prj = lenv.MSVSProject(target=targetname + lenv['MSVSPROJECTSUFFIX'],
                                              srcs=sources,
                                              incs=includes,
