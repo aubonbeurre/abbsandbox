@@ -36,6 +36,7 @@
 #include "gen-cpp/Imaging.h"
 
 #include <iostream>
+#include <fstream>
 
 #include <event2/event.h>
 #include <event2/thread.h>
