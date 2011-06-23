@@ -91,7 +91,6 @@ static void get_tmp_filename(char *filename, int size)
     snprintf(filename, size, "%s/vl.XXXXXX", tmpdir);
     fd = mkstemp(filename);
     close(fd);
-    printf("%s\n", filename);
 }
 #endif
 
@@ -249,7 +248,7 @@ protected:
 		try {
 		  jpeg_write_view(temp_path, v);
 		} catch(std::exception& e) {
-		  printf("error %d\n", errno);
+		  fprintf(stderr, "jpeg_write_view error %d\n", errno);
 		  throw;
 		}
 
