@@ -80,7 +80,7 @@ static void get_tmp_filename(char *filename, int size)
 #else
 static void get_tmp_filename(char *filename, int size)
 {
-	boost::mutex::scoped_lock	lock(server_mutex);
+    boost::mutex::scoped_lock	lock(server_mutex);
 
     int fd;
     const char *tmpdir;
@@ -91,6 +91,7 @@ static void get_tmp_filename(char *filename, int size)
     snprintf(filename, size, "%s/vl.XXXXXX", tmpdir);
     fd = mkstemp(filename);
     close(fd);
+    printf("%s\n", filename);
 }
 #endif
 
@@ -245,7 +246,12 @@ protected:
 		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
 
-		jpeg_write_view(temp_path, v);
+		try {
+		  jpeg_write_view(temp_path, v);
+		} catch(std::exception& e) {
+		  printf("error %d\n", errno);
+		  throw;
+		}
 
 		std::ifstream jpegIn( jpegpath.file_string().c_str(), std::ios::binary|std::ios::in);
 		jpegIn.seekg (0, std::ios::end);

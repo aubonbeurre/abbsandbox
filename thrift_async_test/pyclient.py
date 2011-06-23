@@ -111,8 +111,8 @@ class Worker(object):
     @defer.inlineCallbacks
     def doStress(self, args):
         start = timeit.default_timer()
-        numiter = 1000
-        dims = 100
+        numiter = 100
+        dims = 200
         logging.info("starting stress test")
         ds = []    
         pfactory = TBinaryProtocol.TBinaryProtocolFactory()
