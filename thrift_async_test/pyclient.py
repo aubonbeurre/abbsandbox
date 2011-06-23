@@ -104,6 +104,8 @@ class Worker(object):
         jpeg = yield worker_connect.client.mandelbrot(dims, dims)
         jpegccw = yield worker_connect.client.transform(imaging_constants.Transform.ROTATE90CCW, jpeg)
         logging.debug("end stress #%d", cnt)
+        
+        worker_connect.transport.loseConnection()
 
         defer.returnValue(len(jpegccw))
 
