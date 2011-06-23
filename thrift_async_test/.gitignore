@@ -1,5 +1,5 @@
 build
 targets
-pyclient.log
+pyclient.log*
 vc100.idb
 vc100.pdb

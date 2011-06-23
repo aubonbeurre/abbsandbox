@@ -3,6 +3,7 @@ import os
 import logging
 import getopt
 import logging.handlers
+import timeit
 
 thisfile = os.path.abspath(os.path.normpath(__file__))
 pythonlib = os.path.join(os.path.dirname(os.path.dirname(thisfile)), "pythonlib")
@@ -10,7 +11,7 @@ genpy = os.path.join(os.path.dirname(thisfile), "gen-py.twisted")
 sys.path.insert(0, pythonlib)
 sys.path.insert(0, genpy)
 
-from twisted.internet import defer
+from twisted.internet import threads, defer
 from twisted.internet.protocol import ClientCreator
 from twisted.python import log, failure
 from twisted.internet.error import ConnectionRefusedError
@@ -28,6 +29,16 @@ def sleep_deferred(reactor, t):
     return d
 
 
+def formatFileSize(maxmem):
+    if maxmem > 1024 * 1024 * 1024:
+        maxmem = "%.2f" % (float(maxmem) / (1024.0*1024.0*1024.0)) + " Gb"
+    elif maxmem > 1024 * 1024:
+        maxmem = "%.2f" % (float(maxmem) / (1024.0*1024.0)) + " Mb"
+    else:
+        maxmem = "%.2f" % (float(maxmem) / (1024.0)) + " Kb"
+    return maxmem
+
+
 class Worker(object):
     
     def __init__(self, reactor):
@@ -35,11 +46,11 @@ class Worker(object):
 
 
     @defer.inlineCallbacks
-    def loop(self, cmd):
+    def loop(self, args):
         try:
             yield self.connect()
             
-            yield self.dostuff()
+            yield self.doStuff(args)
         except (KeyboardInterrupt, SystemExit):
             pass
         except imaging_constants.InvalidOperation, e:
@@ -67,21 +78,68 @@ class Worker(object):
             
 
     @defer.inlineCallbacks
-    def dostuff(self):
+    def doStuff(self, args):
+        if (args and args[0] == "simple") or not args:
+            jpeg = yield self.worker_connect.client.mandelbrot(200, 200)
+            file(r"J:\mandelbrot.jpg", "wb").write(jpeg)
+            
+            jpegccw = yield self.worker_connect.client.transform(imaging_constants.Transform.ROTATE90CCW, jpeg)
+            file(r"J:\mandelbrot_ccw.jpg", "wb").write(jpegccw)
+            defer.returnValue(None)
         
-        jpeg = yield self.worker_connect.client.mandelbrot(200, 200)
-        file(r"J:\mandelbrot.jpg", "wb").write(jpeg)
+        if args and args[0] == "stress":
+            yield self.doStress(args[1:])
+            defer.returnValue(None)
         
-        jpegccw = yield self.worker_connect.client.transform(imaging_constants.Transform.ROTATE90CCW, jpeg)
-        file(r"J:\mandelbrot_ccw.jpg", "wb").write(jpegccw)
+        raise Exception("Unknown command '%s'" % args[0])
         
 
+    @defer.inlineCallbacks
+    def __doStressOne(self, res, cnt, dims):
+        if isinstance(res, failure.Failure):
+            defer.returnValue(res)
+        
+        worker_connect = res
+        logging.debug("start stress #%d", cnt)
+        jpeg = yield worker_connect.client.mandelbrot(dims, dims)
+        jpegccw = yield worker_connect.client.transform(imaging_constants.Transform.ROTATE90CCW, jpeg)
+        logging.debug("end stress #%d", cnt)
+
+        defer.returnValue(len(jpegccw))
+
+
+    @defer.inlineCallbacks
+    def doStress(self, args):
+        start = timeit.default_timer()
+        numiter = 1000
+        dims = 100
+        logging.info("starting stress test")
+        ds = []    
+        pfactory = TBinaryProtocol.TBinaryProtocolFactory()
+        for cnt in range(numiter):
+            worker_client = ClientCreator(self.reactor, TTwisted.ThriftClientProtocol,
+                                        client_class=Imaging.Client, iprot_factory=pfactory)
+    
+            d = worker_client.connectTCP("127.0.0.1", 9090)
+            ds.append(d)
+            
+            d.addBoth(self.__doStressOne, cnt, dims)
+
+        totalsize = yield defer.DeferredList(ds, fireOnOneErrback=True)
+        totalsize = map(lambda x: x[1], totalsize)
+        totalsize = reduce(lambda x,y: x+y, totalsize)
+        totalsize *= 3
+        elapsed = timeit.default_timer() - start
+        logging.info("stress dims=%dx%d test #=%d elapsed=%.2fs trans=%.2f/s band=%s/s", dims, dims, numiter,
+                     elapsed, numiter / elapsed, formatFileSize(totalsize / elapsed))
+        
+        
+ 
 def main():
     def usage():
         theusage = (
             "Usage: python pyclient.py <options>",
             "\nOptional:",
-            "  WORKER_QUEUE(S) : list of queues to handle (default: all queues)",
             "  -h : display this help page",
             "  -v : increase logging",
             "",
@@ -93,7 +151,7 @@ def main():
     try:
         if len(sys.argv) <= 0:
             usage()
-            return -1
+            return - 1
 
         longoptions = ()
         opts, args = getopt.getopt(sys.argv[1:], 'hv', longoptions)
@@ -110,7 +168,7 @@ def main():
 
     except getopt.GetoptError:
         usage()
-        return -1
+        return - 1
 
     # set up the logging
     logger = logging.getLogger()
@@ -123,7 +181,7 @@ def main():
     logger.addHandler(hdlr)
     
     hdlr = logging.handlers.RotatingFileHandler(os.path.join(os.path.dirname(thisfile), "pyclient.log"),
-                                                maxBytes=1000*1024, backupCount=5)
+                                                maxBytes=1000 * 1024, backupCount=5)
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
 
@@ -136,13 +194,15 @@ def main():
     else:
         from twisted.internet.selectreactor import SelectReactor
         reactor = SelectReactor()
+    
+    reactor.getThreadPool().adjustPoolsize(10, 20)
 
     # set-up twisted to use regular python logging
     observer = log.PythonLoggingObserver()
     observer.start()
 
     worker = Worker(reactor)
-    reactor.callLater(5, worker.loop, "")
+    reactor.callLater(5, worker.loop, args)
     
     # enter twisted loop
     logging.info("starting reactor %s", type(reactor).__name__)
