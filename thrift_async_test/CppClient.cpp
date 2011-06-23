@@ -27,12 +27,25 @@
 #include <transport/TSocket.h>
 #include <transport/TTransportUtils.h>
 
-#include "../gen-cpp/Calculator.h"
+#include <boost/gil/gil_all.hpp>
+#include <boost/gil/extension/io/jpeg_dynamic_io.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+
+//#include "gen-cpp/Calculator.h"
+#include "gen-cpp/Imaging.h"
 
 #include <iostream>
 
 #include <event2/event.h>
 #include <event2/thread.h>
+
+#ifdef WIN32
+#define snprintf _snprintf_c
+#define PATH_MAX MAX_PATH
+#else
+#include <unistd.h>
+#endif
 
 static event_base *base;
 
@@ -41,10 +54,35 @@ using namespace apache::thrift;
 using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 
-using namespace tutorial;
-using namespace shared;
+//using namespace tutorial;
+//using namespace shared;
+using namespace imaging;
 
 using namespace boost;
+using namespace boost::gil;
+
+#ifdef _WIN32
+static void get_tmp_filename(char *filename, int size)
+{
+    char temp_dir[PATH_MAX];
+
+    GetTempPathA(PATH_MAX, temp_dir);
+    GetTempFileNameA(temp_dir, "qem", 0, filename);
+}
+#else
+static void get_tmp_filename(char *filename, int size)
+{
+    int fd;
+    const char *tmpdir;
+    /* XXX: race condition possible */
+    tmpdir = getenv("TMPDIR");
+    if (!tmpdir)
+        tmpdir = "/tmp";
+    snprintf(filename, size, "%s/vl.XXXXXX", tmpdir);
+    fd = mkstemp(filename);
+    close(fd);
+}
+#endif
 
 static void _log_cb(int severity, const char *msg) {
 	static const char* sev[4] = {
@@ -57,6 +95,22 @@ static void _log_cb(int severity, const char *msg) {
 	int socket_errno = WSAGetLastError();
 #endif
 	std::cout << sev[severity] << ": " << msg << std::endl;
+}
+
+static rgb8_image_t image_from_string(const std::string& img) {
+	char temp_path[PATH_MAX];
+	get_tmp_filename(temp_path, PATH_MAX);
+	boost::filesystem::path jpegpath(temp_path);
+
+	std::ofstream jpegOut(temp_path, std::ios::out|std::ios::trunc|std::ios::binary);
+	jpegOut << img;
+	jpegOut.close();
+
+	rgb8_image_t image;
+	jpeg_read_and_convert_image(temp_path, image);
+
+	boost::filesystem::remove(jpegpath);
+	return image;
 }
 
 int main(int argc, char** argv) {
@@ -101,6 +155,30 @@ int main(int argc, char** argv) {
 	boost::shared_ptr<TTransport> transport(new TFramedTransport(socket));
 	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
+	ImagingClient client(protocol);
+
+	try {
+		transport->open();
+
+		std::string imgstr;
+		client.mandelbrot(imgstr, 200, 200);
+		client.transform(imgstr, Transform::ROTATE90CCW, imgstr);
+
+		rgb8_image_t i = image_from_string(imgstr);
+
+#ifdef WIN32
+		jpeg_write_view("J:\\mandelbrot_ccw.jpg", const_view(i));
+#else
+		jpeg_write_view("/tmp/mandelbrot_ccw.jpg", const_view(i));
+#endif
+		transport->close();
+	} catch (InvalidOperation &io) {
+		printf("InvalidOperation: %s\n", io.why.c_str());
+	} catch (TException &tx) {
+		printf("ERROR: %s\n", tx.what());
+	}
+
+#if 0
 	CalculatorClient client(protocol);
 
 	try {
@@ -140,5 +218,6 @@ int main(int argc, char** argv) {
 	} catch (TException &tx) {
 		printf("ERROR: %s\n", tx.what());
 	}
+#endif
 
 }

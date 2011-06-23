@@ -235,7 +235,7 @@ public:
 
 protected:
 	template <typename SrcView>
-	void view_to_string(const SrcView& v, std::string& _return) {
+	static void view_to_string(const SrcView& v, std::string& _return) {
 		char temp_path[PATH_MAX];
 		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
@@ -256,7 +256,7 @@ protected:
 		boost::filesystem::remove(jpegpath);
 	}
 
-	rgb8_image_t image_from_string(const std::string& img) {
+	static rgb8_image_t image_from_string(const std::string& img) {
 		char temp_path[PATH_MAX];
 		get_tmp_filename(temp_path, PATH_MAX);
 		boost::filesystem::path jpegpath(temp_path);
