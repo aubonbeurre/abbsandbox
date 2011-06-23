@@ -251,6 +251,7 @@ protected:
 			_return = std::string(blob_size, 0);
 			jpegIn.read(&*_return.begin(), blob_size);
 		}
+		jpegIn.close();
 
 		boost::filesystem::remove(jpegpath);
 	}
