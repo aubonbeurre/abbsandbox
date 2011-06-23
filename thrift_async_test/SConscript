@@ -1,6 +1,7 @@
 Import('env')
 
 import sys
+import os.path
 
 if sys.platform == 'win32':
     THRIFT = "J:/sources/thrift/"
@@ -39,10 +40,11 @@ cppdefines = {
 }
 
 if sys.platform == 'win32':
+    pthreadVC2 = "pthreadVC2" if env['OS32'] else "pthreadVC2_x64"
     libpath = [
         LIBEVENT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
         THRIFT + 'build/${BUILD_PLATFORM}/%s${BUILD_TARGET}/' % ("" if env['OS32'] else "x64/"),
-        THRIFT + 'build/${BUILD_PLATFORM}/%s/' % ("pthreadVC2" if env['OS32'] else "pthreadVC2_x64"),
+        THRIFT + 'build/${BUILD_PLATFORM}/%s/' % pthreadVC2,
     ]
     libs = [
         'libevent',
@@ -81,6 +83,13 @@ deps = [
     'boost_filesystem',
 ]
 
+
+if sys.platform == 'win32':
+    pthread = THRIFT + 'build/${BUILD_PLATFORM}/%s/%s.dll' % (pthreadVC2, pthreadVC2),
+    cmd = env.Command("$BUILD_DIR/%s.dll" % pthreadVC2, env.NoCache(pthread), env.AbbCopy('$TARGET', '$SOURCE'))
+    copy_pthread = env.Alias('copy_pthread', cmd)
+
+
 client = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
                         defines=cppdefines, includes=cpppath,
                         libpath=libpath, libs=libs,
@@ -91,5 +100,9 @@ server = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.
                         deps=deps)
 
 target = Alias('apps', [client, server])
+
+if sys.platform == 'win32':
+    env.Requires(client, copy_pthread)
+    env.Requires(server, copy_pthread)
 
 Return("target")
