@@ -2,3 +2,4 @@ virtualenv myenv
 cd myenv
 source bin/activate
 pip -E . install boto twisted
+cd ~/sources/thrift/lib/py && python setup.py install
