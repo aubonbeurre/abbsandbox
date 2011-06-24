@@ -1,14 +1,4 @@
 test
-.sconsign.dblite
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.sln
-*.suo
-*.sdf
-Debug
-Release
-x64
 vc100.idb
 vc100.pdb
 build
