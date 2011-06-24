@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements. See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership. The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License. You may obtain a copy of the License at
+ 
+ http://www.apache.org/licenses/LICENSE-2.0
+ 
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied. See the License for the
+ specific language governing permissions and limitations
+ under the License.
+ -->
+<project name="maven_test" default="dist" basedir="."
+  xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+  
+  <description>Maven Build Test</description>
+  <property name="mtest.artifactid" value="maven_test"/>
+
+  <!-- Include the base properties file -->
+  <property file="${basedir}/build.properties" />
+
+  <property environment="env"/>
+
+  <condition property="version" value="${mtest.version}">
+    <isset property="release"/>
+  </condition>
+  <property name="version" value="${mtest.version}-snapshot"/> 
+
+  <property name="final.name" value="${mtest.artifactid}-${version}"/>
+
+  <property name="src" location="${basedir}/src"/>
+  <property name="lib.dir" location="${basedir}/lib"/>
+  <property name="build.dir" location="${basedir}/build"/>
+  <property name="build.lib.dir" location="${build.dir}/lib"/>
+  <property name="build.tools.dir" location="${build.dir}/tools"/>
+  <property name="src.test" location="test"/>
+  <property name="javadoc.dir" location="${build.dir}/javadoc"/>
+  <property name="build.test.dir" location="${build.dir}/test"/>
+
+  <property name="gen" location="gen-java"/>
+  <property name="genbean" location="gen-javabean"/>
+
+  <property name="jar.file" location="${build.dir}/${final.name}.jar"/>
+  <property name="test.jar.file" location="${build.dir}/${final.name}-test.jar"/>
+  <property name="javadoc.jar.file" location="${build.dir}/${final.name}-javadoc.jar"/>
+  <property name="source.tar.gz" location="${build.dir}/${final.name}-src.tar.gz"/>
+
+  <!-- Junit properties -->
+  <property name="test.junit.output.format" value="plain"/>
+  <property name="test.timeout" value="2000000"/>
+  <property name="test.src.dir" location="${basedir}/test"/>
+  <property name="test.log.dir" value="${build.test.dir}/log"/>
+  <property name="test.port" value="9090"/> 
+
+  <!-- maven properties -->
+  <property name="pom.xml" location="${build.dir}/${final.name}.pom"/>
+
+  <path id="compile.classpath">
+    <fileset dir="${build.lib.dir}"> 
+      <include name="**/*.jar"/>
+    </fileset>
+    <fileset dir="${lib.dir}"> 
+      <include name="**/*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="compile.classpath"/>
+    <pathelement path="${env.CLASSPATH}"/>
+    <pathelement location="${build.test.dir}"/>
+    <pathelement location="${jar.file}"/>
+    <pathelement location="${test.jar.file}"/>
+  </path>
+
+  <!-- Tasks --> 
+  <target name="init" depends="setup.init,mvn.init" unless="init.finished"> <!--  -->
+    <property name="init.finished" value="true"/>
+  </target>
+
+  <target name="setup.init">
+    <tstamp/>
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.lib.dir}"/>
+    <mkdir dir="${build.tools.dir}"/>
+    <mkdir dir="${build.test.dir}"/>
+  </target>
+
+  <target name="compile" depends="init">
+    <javac srcdir="${src}" destdir="${build.dir}" source="1.5" target="1.5" 
+    debug="true" classpathref="compile.classpath" includeantruntime="false"/>
+  </target>
+
+  <target name="javadoc" depends="init">
+    <javadoc sourcepath="${src}" destdir="${javadoc.dir}"
+      version="true" windowtitle="MTest Java API" doctitle="MTest Java API"
+      classpathref="test.classpath">
+    </javadoc>
+    <jar jarfile="${javadoc.jar.file}" basedir="${javadoc.dir}">
+      <manifest>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="dist" depends="compile">
+    <mkdir dir="${build.dir}/META-INF"/>
+    <jar jarfile="${jar.file}">
+      <manifest>
+        <attribute name="Implementation-Version" value="${version}"/>
+      </manifest>
+      <fileset dir="${build.dir}">
+        <include name="com/abb/mtest/**/*.class"/>
+        <include name="META-INF/*.txt"/>
+      </fileset>
+      <fileset dir="src">
+        <include name="**/*.java"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="pack.src">
+    <tar destfile="${source.tar.gz}" basedir="${src}" compression="gzip"/>
+  </target>
+
+  <target name="install" depends="dist,javadoc">
+    <copy todir="${install.path}">
+      <fileset dir="."><include name="*.jar"/></fileset>
+    </copy>
+    <copy todir="${install.javadoc.path}">
+      <fileset dir="${javadoc.dir}">
+        <include name="**/*"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${gen}"/>
+    <delete dir="${genbean}"/>
+  </target>
+
+  <target name="mvn.ant.tasks.download" depends="setup.init" unless="mvn.ant.tasks.found">
+    <get src="${mvn.ant.task.url}/${mvn.ant.task.jar}" dest="${build.tools.dir}/${mvn.ant.task.jar}" usetimestamp="true"/>
+  </target>
+
+  <target name="mvn.ant.tasks.check">
+    <condition property="mvn.ant.tasks.found">
+      <typefound uri="antlib:org.apache.maven.artifact.ant" name="artifact"/>
+    </condition>
+  </target> 
+
+  <target name="mvn.init" depends="mvn.ant.tasks.download" unless="mvn.finished">
+    <!-- Download mvn ant tasks, download dependencies, and setup pom file -->
+    <typedef uri="antlib:org.apache.maven.artifact.ant" classpath="${build.tools.dir}/${mvn.ant.task.jar}"/>
+
+    <!-- remote repositories used to download dependencies from -->
+    <artifact:remoteRepository id="central" url="${mvn.repo}"/>
+    <artifact:remoteRepository id="apache" url="${apache.repo}"/>
+
+    <!-- Pom file information -->
+    <artifact:pom id="pom" 
+      groupId="${mtest.groupid}" 
+      artifactId="${mtest.artifactid}"
+      version="${version}" 
+      url="http://aubonbeurre.github.com"
+      name="Maven Test"
+      description="this is a test."
+      packaging="pom"
+    >
+      <remoteRepository refid="central"/>
+      <remoteRepository refid="apache"/>
+      <license name="The Apache Software License, Version 2.0" url="${license}"/>
+      <scm connection="scm:git:https://aubonbeurre.github.com/abbsandbox/" 
+        developerConnection="scm:git:https://aubonbeurre.github.com/abbsandbox/"
+        url="https://aubonbeurre.github.com"
+      />
+      <developer id="aubonbeurre" name="Alexandre Parenteau"/>
+
+      <!-- dependencies list -->
+      <dependency groupId="org.apache.thrift" artifactId="libthrift" version="0.6.1"/>
+      <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.5.8"/>
+      <dependency groupId="org.slf4j" artifactId="slf4j-log4j12" version="1.5.8"/>
+      <dependency groupId="commons-lang" artifactId="commons-lang" version="2.5"/>
+      <dependency groupId="junit" artifactId="junit" version="4.4"/>
+      <dependency groupId="javax.servlet" artifactId="servlet-api" version="2.5"/>
+      <dependency groupId="org.apache.httpcomponents" artifactId="httpclient" version="4.0.1"/>
+    </artifact:pom>
+
+    <!-- Generate the pom file -->
+    <artifact:writepom pomRefId="pom" file="${pom.xml}"/>
+
+    <!-- Download the dependencies -->
+    <artifact:dependencies filesetId="build-dependency-jars" pomRefId="pom"/>
+
+    <!-- Copy the dependencies to the build/lib dir -->
+    <copy todir="${build.dir}/lib">
+      <fileset refid="build-dependency-jars"/>
+      <mapper type="flatten"/>
+    </copy>
+
+    <property name="mvn.finished" value="true"/>
+  </target>
+
+</project>
