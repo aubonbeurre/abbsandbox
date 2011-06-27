@@ -4,8 +4,7 @@
  */
 namespace cpp imaging
 namespace java imaging
-namespace php imaging
-namespace perl imaging
+namespace as3 imaging
 
 enum Transform {
   UPDOWN = 1,
