@@ -3,3 +3,4 @@ targets
 pyclient.log*
 vc100.idb
 vc100.pdb
+.settings
