@@ -1,0 +1,21 @@
+Import('env')
+
+BOOST_ROOT = env["BOOST_ROOT"]
+
+BOOST_PROGRAMOPTIONS = [
+    BOOST_ROOT + 'libs/program_options/src/options_description.cpp',
+    BOOST_ROOT + 'libs/program_options/src/cmdline.cpp',
+    BOOST_ROOT + 'libs/program_options/src/variables_map.cpp',
+    BOOST_ROOT + 'libs/program_options/src/parsers.cpp',
+    BOOST_ROOT + 'libs/program_options/src/value_semantic.cpp',
+    BOOST_ROOT + 'libs/program_options/src/utf8_codecvt_facet.cpp',
+    BOOST_ROOT + 'libs/program_options/src/convert.cpp',
+    BOOST_ROOT + 'libs/program_options/src/config_file.cpp',
+    BOOST_ROOT + 'libs/program_options/src/positional_options.cpp',
+]
+
+target = env.AbbSharedObj("boost_programoptions",
+                             sources=BOOST_PROGRAMOPTIONS,
+                             includes=[env["BOOST_ROOT"],])
+
+Return("target")

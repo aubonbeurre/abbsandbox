@@ -33,5 +33,6 @@ else:
 topmake = env.SConscript('SConscript')
 jpeg = env.SConscript('../lib/libjpeg/SConscript')
 boost_filesystem = env.SConscript('../lib/boost_filesystem/SConscript')
+boost_programoptions = env.SConscript('../lib/boost_programoptions/SConscript')
 
 Default(Alias('all', [topmake, jpeg, boost_filesystem]))

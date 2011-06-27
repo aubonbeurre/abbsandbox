@@ -26,6 +26,15 @@ gensrc = [
      SRC_ROOT + 'gen-cpp/Imaging.cpp',
 ]
 
+serversrc = [
+	SRC_ROOT + 'CppServer.cpp',
+	SRC_ROOT + 'ImagingHandler.cpp',
+]
+
+clientsrc = [
+	SRC_ROOT + 'CppClient.cpp',
+]
+
 cpppath = [
     BOOST_ROOT + 'boost/tr1',
     BOOST_ROOT,
@@ -78,9 +87,14 @@ else:
     ]
 
 
-deps = [
+clientdeps = [
+]
+
+
+serverdeps = [
     'myjpeg',
     'boost_filesystem',
+    'boost_programoptions',
 ]
 
 
@@ -90,14 +104,14 @@ if sys.platform == 'win32':
     copy_pthread = env.Alias('copy_pthread', cmd)
 
 
-client = env.AbbProg(progname="client", sources=gensrc + [SRC_ROOT + 'CppClient.cpp',],
+client = env.AbbProg(progname="client", sources=gensrc + clientsrc,
                         defines=cppdefines, includes=cpppath,
                         libpath=libpath, libs=libs,
-                        deps=deps)
-server = env.AbbProg(progname="server", sources=gensrc + [SRC_ROOT + 'CppServer.cpp',],
+                        deps=clientdeps)
+server = env.AbbProg(progname="server", sources=gensrc + serversrc,
                         defines=cppdefines, includes=cpppath,
                         libpath=libpath, libs=libs,
-                        deps=deps)
+                        deps=serverdeps)
 
 target = Alias('apps', [client, server])
 
