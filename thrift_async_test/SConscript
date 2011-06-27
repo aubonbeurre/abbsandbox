@@ -28,7 +28,9 @@ gensrc = [
 
 serversrc = [
 	SRC_ROOT + 'CppServer.cpp',
-	SRC_ROOT + 'ImagingHandler.cpp',
+    SRC_ROOT + 'ImagingHandler.cpp',
+    SRC_ROOT + 'ImagingAsyncHandler.cpp',
+    SRC_ROOT + 'ImagingThriftUtils.cpp',
 ]
 
 clientsrc = [

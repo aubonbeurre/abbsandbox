@@ -4,6 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
 #include "Imaging.h"
+#include "async/TAsyncChannel.h"
 
 namespace imaging {
 
@@ -199,6 +200,20 @@ uint32_t Imaging_mandelbrot_presult::read(::apache::thrift::protocol::TProtocol*
   return xfer;
 }
 
+uint32_t Imaging_mandelbrot_presult::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("Imaging_mandelbrot_presult");
+  xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
+  xfer += oprot->writeBinary((*(this->success)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ouch", ::apache::thrift::protocol::T_STRUCT, 1);
+  xfer += this->ouch.write(oprot);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
 uint32_t Imaging_transform_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
@@ -390,6 +405,20 @@ uint32_t Imaging_transform_presult::read(::apache::thrift::protocol::TProtocol* 
 
   xfer += iprot->readStructEnd();
 
+  return xfer;
+}
+
+uint32_t Imaging_transform_presult::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("Imaging_transform_presult");
+  xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRING, 0);
+  xfer += oprot->writeBinary((*(this->success)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldBegin("ouch", ::apache::thrift::protocol::T_STRUCT, 1);
+  xfer += this->ouch.write(oprot);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
   return xfer;
 }
 
@@ -674,6 +703,407 @@ void ImagingProcessor::process_transform(int32_t seqid, ::apache::thrift::protoc
   if (eventHandler_.get() != NULL) {
     eventHandler_->postWrite(ctx, "Imaging.transform", bytes);
   }
+}
+
+void ImagingCobClient::mandelbrot(std::tr1::function<void(ImagingCobClient* client)> cob, const int32_t w, const int32_t h)
+{
+  send_mandelbrot(w, h);
+  channel_->sendAndRecvMessage(std::tr1::bind(cob, this), otrans_.get(), itrans_.get());
+}
+
+void ImagingCobClient::send_mandelbrot(const int32_t w, const int32_t h)
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("mandelbrot", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  Imaging_mandelbrot_pargs args;
+  args.w = &w;
+  args.h = &h;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->writeEnd();
+  oprot_->getTransport()->flush();
+}
+
+void ImagingCobClient::recv_mandelbrot(std::string& _return)
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+  bool completed = false;
+
+  try {
+    iprot_->readMessageBegin(fname, mtype, rseqid);
+    if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+      ::apache::thrift::TApplicationException x;
+      x.read(iprot_);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(true);
+      throw x;
+    }
+    if (mtype != ::apache::thrift::protocol::T_REPLY) {
+      iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(false);
+    }
+    if (fname.compare("mandelbrot") != 0) {
+      iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(false);
+    }
+    Imaging_mandelbrot_presult result;
+    result.success = &_return;
+    result.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+
+    if (result.__isset.success) {
+      // _return pointer has now been filled
+      completed = true;
+      completed__(true);
+      return;
+    }
+    if (result.__isset.ouch) {
+      completed = true;
+      completed__(true);
+      throw result.ouch;
+    }
+    completed = true;
+    completed__(true);
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "mandelbrot failed: unknown result");
+  } catch (...) {
+    if (!completed) {
+      completed__(false);
+    }
+    throw;
+  }
+}
+
+void ImagingCobClient::transform(std::tr1::function<void(ImagingCobClient* client)> cob, const Transform::type t, const std::string& img)
+{
+  send_transform(t, img);
+  channel_->sendAndRecvMessage(std::tr1::bind(cob, this), otrans_.get(), itrans_.get());
+}
+
+void ImagingCobClient::send_transform(const Transform::type t, const std::string& img)
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("transform", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  Imaging_transform_pargs args;
+  args.t = &t;
+  args.img = &img;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->writeEnd();
+  oprot_->getTransport()->flush();
+}
+
+void ImagingCobClient::recv_transform(std::string& _return)
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+  bool completed = false;
+
+  try {
+    iprot_->readMessageBegin(fname, mtype, rseqid);
+    if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+      ::apache::thrift::TApplicationException x;
+      x.read(iprot_);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(true);
+      throw x;
+    }
+    if (mtype != ::apache::thrift::protocol::T_REPLY) {
+      iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(false);
+    }
+    if (fname.compare("transform") != 0) {
+      iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+      iprot_->readMessageEnd();
+      iprot_->getTransport()->readEnd();
+      completed = true;
+      completed__(false);
+    }
+    Imaging_transform_presult result;
+    result.success = &_return;
+    result.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+
+    if (result.__isset.success) {
+      // _return pointer has now been filled
+      completed = true;
+      completed__(true);
+      return;
+    }
+    if (result.__isset.ouch) {
+      completed = true;
+      completed__(true);
+      throw result.ouch;
+    }
+    completed = true;
+    completed__(true);
+    throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "transform failed: unknown result");
+  } catch (...) {
+    if (!completed) {
+      completed__(false);
+    }
+    throw;
+  }
+}
+
+void ImagingAsyncProcessor::process(std::tr1::function<void(bool ok)> cob, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot) {
+
+  ::apache::thrift::protocol::TProtocol* iprot = piprot.get();
+  ::apache::thrift::protocol::TProtocol* oprot = poprot.get();
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+  int32_t seqid;
+
+  iprot->readMessageBegin(fname, mtype, seqid);
+
+  if (mtype != ::apache::thrift::protocol::T_CALL && mtype != ::apache::thrift::protocol::T_ONEWAY) {
+    iprot->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot->readMessageEnd();
+    iprot->getTransport()->readEnd();
+    ::apache::thrift::TApplicationException x(::apache::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
+    oprot->writeMessageBegin(fname, ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->writeEnd();
+    oprot->getTransport()->flush();
+    return cob(true);
+  }
+
+  return process_fn(cob, iprot, oprot, fname, seqid);
+}
+
+void ImagingAsyncProcessor::process_fn(std::tr1::function<void(bool ok)> cob, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, std::string& fname, int32_t seqid) {
+  std::map<std::string, void (ImagingAsyncProcessor::*)(std::tr1::function<void(bool ok)>, int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*)>::iterator pfn;
+  pfn = processMap_.find(fname);
+  if (pfn == processMap_.end()) {
+    iprot->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot->readMessageEnd();
+    iprot->getTransport()->readEnd();
+    ::apache::thrift::TApplicationException x(::apache::thrift::TApplicationException::UNKNOWN_METHOD, "Invalid method name: '"+fname+"'");
+    oprot->writeMessageBegin(fname, ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->writeEnd();
+    oprot->getTransport()->flush();
+    return cob(true);
+  }
+  (this->*(pfn->second))(cob, seqid, iprot, oprot);
+  return;
+}
+
+void ImagingAsyncProcessor::process_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  Imaging_mandelbrot_args args;
+  void* ctx = NULL;
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.mandelbrot", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.mandelbrot");
+
+  try {
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->preRead(ctx, "Imaging.mandelbrot");
+    }
+    args.read(iprot);
+    iprot->readMessageEnd();
+    uint32_t bytes = iprot->getTransport()->readEnd();
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->postRead(ctx, "Imaging.mandelbrot", bytes);
+    }
+  }
+  catch (const std::exception& exn) {
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->handlerError(ctx, "Imaging.mandelbrot");
+    }
+    return cob(false);
+  }
+  freer.unregister();
+  void (ImagingAsyncProcessor::*return_fn)(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return) =
+    &ImagingAsyncProcessor::return_mandelbrot;
+  void (ImagingAsyncProcessor::*throw_fn)(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw) =
+    &ImagingAsyncProcessor::throw_mandelbrot;
+  iface_->mandelbrot(
+      std::tr1::bind(return_fn, this, cob, seqid, oprot, ctx, std::tr1::placeholders::_1),
+      std::tr1::bind(throw_fn, this, cob, seqid, oprot, ctx, std::tr1::placeholders::_1),
+      args.w,
+      args.h);
+}
+
+void ImagingAsyncProcessor::return_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return)
+{
+  Imaging_mandelbrot_presult result;
+  result.success = const_cast<std::string*>(&_return);
+  result.__isset.success = true;
+
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.mandelbrot", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.mandelbrot");
+
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->preWrite(ctx, "Imaging.mandelbrot");
+  }
+
+  oprot->writeMessageBegin("mandelbrot", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  uint32_t bytes = oprot->getTransport()->writeEnd();
+  oprot->getTransport()->flush();
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->postWrite(ctx, "Imaging.mandelbrot", bytes);
+  }
+  return cob(true);
+}
+
+void ImagingAsyncProcessor::throw_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw)
+{
+  Imaging_mandelbrot_result result;
+
+  try {
+    _throw->throw_it();
+    return cob(false);
+  }  catch (InvalidOperation &ouch) {
+    result.ouch = ouch;
+    result.__isset.ouch = true;
+  }
+
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.mandelbrot", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.mandelbrot");
+
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->preWrite(ctx, "Imaging.mandelbrot");
+  }
+
+  oprot->writeMessageBegin("mandelbrot", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  uint32_t bytes = oprot->getTransport()->writeEnd();
+  oprot->getTransport()->flush();
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->postWrite(ctx, "Imaging.mandelbrot", bytes);
+  }
+  return cob(true);
+}
+
+void ImagingAsyncProcessor::process_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot)
+{
+  Imaging_transform_args args;
+  void* ctx = NULL;
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.transform", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.transform");
+
+  try {
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->preRead(ctx, "Imaging.transform");
+    }
+    args.read(iprot);
+    iprot->readMessageEnd();
+    uint32_t bytes = iprot->getTransport()->readEnd();
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->postRead(ctx, "Imaging.transform", bytes);
+    }
+  }
+  catch (const std::exception& exn) {
+    if (eventHandler_.get() != NULL) {
+      eventHandler_->handlerError(ctx, "Imaging.transform");
+    }
+    return cob(false);
+  }
+  freer.unregister();
+  void (ImagingAsyncProcessor::*return_fn)(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return) =
+    &ImagingAsyncProcessor::return_transform;
+  void (ImagingAsyncProcessor::*throw_fn)(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw) =
+    &ImagingAsyncProcessor::throw_transform;
+  iface_->transform(
+      std::tr1::bind(return_fn, this, cob, seqid, oprot, ctx, std::tr1::placeholders::_1),
+      std::tr1::bind(throw_fn, this, cob, seqid, oprot, ctx, std::tr1::placeholders::_1),
+      args.t,
+      args.img);
+}
+
+void ImagingAsyncProcessor::return_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return)
+{
+  Imaging_transform_presult result;
+  result.success = const_cast<std::string*>(&_return);
+  result.__isset.success = true;
+
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.transform", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.transform");
+
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->preWrite(ctx, "Imaging.transform");
+  }
+
+  oprot->writeMessageBegin("transform", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  uint32_t bytes = oprot->getTransport()->writeEnd();
+  oprot->getTransport()->flush();
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->postWrite(ctx, "Imaging.transform", bytes);
+  }
+  return cob(true);
+}
+
+void ImagingAsyncProcessor::throw_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw)
+{
+  Imaging_transform_result result;
+
+  try {
+    _throw->throw_it();
+    return cob(false);
+  }  catch (InvalidOperation &ouch) {
+    result.ouch = ouch;
+    result.__isset.ouch = true;
+  }
+
+  if (eventHandler_.get() != NULL) {
+    ctx = eventHandler_->getContext("Imaging.transform", NULL);
+  }
+  ::apache::thrift::TProcessorContextFreer freer(eventHandler_.get(), ctx, "Imaging.transform");
+
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->preWrite(ctx, "Imaging.transform");
+  }
+
+  oprot->writeMessageBegin("transform", ::apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  uint32_t bytes = oprot->getTransport()->writeEnd();
+  oprot->getTransport()->flush();
+  if (eventHandler_.get() != NULL) {
+    eventHandler_->postWrite(ctx, "Imaging.transform", bytes);
+  }
+  return cob(true);
 }
 
 } // namespace

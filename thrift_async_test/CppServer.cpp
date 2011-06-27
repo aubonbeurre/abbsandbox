@@ -26,10 +26,14 @@
 #include <server/TNonblockingServer.h>
 #include <transport/TServerSocket.h>
 #include <transport/TTransportUtils.h>
+#include <async/TEvhttpServer.h>
+#include <async/TAsyncBufferProcessor.h>
+#include <async/TAsyncProtocolProcessor.h>
 
 #include <iostream>
 
 #include "ImagingHandler.h"
+#include "ImagingAsyncHandler.h"
 
 #include <boost/program_options.hpp>
 
@@ -44,6 +48,7 @@ using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 using namespace apache::thrift::server;
 using namespace apache::thrift::concurrency;
+using namespace apache::thrift::async;
 
 static void _log_cb(int severity, const char *msg) {
 	static const char* sev[4] = {
@@ -154,6 +159,15 @@ int main(int argc, char **argv) {
 
 		printf("Starting the server...\n");
 		server.serve();
+	} else if(server == "http") {
+		boost::shared_ptr<imaging::ImagingAsyncHandler> handler(new imaging::ImagingAsyncHandler());
+		boost::shared_ptr<TAsyncProcessor> proc(new imaging::ImagingAsyncProcessor(handler));
+		boost::shared_ptr<TProtocolFactory> pfact(new TBinaryProtocolFactory());
+		boost::shared_ptr<TAsyncBufferProcessor> bufproc(new TAsyncProtocolProcessor(proc, pfact));
+		boost::shared_ptr<TEvhttpServer> server(new TEvhttpServer(bufproc, port));
+
+		printf("Starting the HTTP server...\n");
+		server->serve();
 	}
 
 	printf("done.\n");

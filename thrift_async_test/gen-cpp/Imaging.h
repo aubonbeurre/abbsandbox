@@ -6,7 +6,13 @@
 #ifndef Imaging_H
 #define Imaging_H
 
+#include <tr1/functional>
+#include <transport/TTransportUtils.h>
+namespace apache { namespace thrift { namespace async {
+class TAsyncChannel;
+}}}
 #include <TProcessor.h>
+#include <async/TAsyncProcessor.h>
 #include "imaging_types.h"
 
 namespace imaging {
@@ -137,6 +143,7 @@ class Imaging_mandelbrot_presult {
   _Imaging_mandelbrot_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
@@ -248,6 +255,7 @@ class Imaging_transform_presult {
   _Imaging_transform_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
@@ -339,6 +347,89 @@ class ImagingMultiface : virtual public ImagingIf {
     }
   }
 
+};
+
+class ImagingCobClient;
+
+class ImagingCobClIf {
+ public:
+  virtual ~ImagingCobClIf() {}
+  virtual void mandelbrot(std::tr1::function<void(ImagingCobClient* client)> cob, const int32_t w, const int32_t h) = 0;
+  virtual void transform(std::tr1::function<void(ImagingCobClient* client)> cob, const Transform::type t, const std::string& img) = 0;
+};
+
+class ImagingCobSvIf {
+ public:
+  virtual ~ImagingCobSvIf() {}
+  virtual void mandelbrot(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const int32_t w, const int32_t h) = 0;
+  virtual void transform(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const Transform::type t, const std::string& img) = 0;
+};
+
+class ImagingCobSvNull : virtual public ImagingCobSvIf {
+ public:
+  virtual ~ImagingCobSvNull() {}
+  void mandelbrot(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const int32_t /* w */, const int32_t /* h */) {
+    std::string _return = "";
+    return cob(_return);
+  }
+  void transform(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const Transform::type /* t */, const std::string& /* img */) {
+    std::string _return = "";
+    return cob(_return);
+  }
+};
+
+class ImagingCobClient : virtual public ImagingCobClIf {
+ public:
+  ImagingCobClient(boost::shared_ptr< ::apache::thrift::async::TAsyncChannel> channel, ::apache::thrift::protocol::TProtocolFactory* protocolFactory) :
+    channel_(channel),
+    itrans_(new ::apache::thrift::transport::TMemoryBuffer()),
+    otrans_(new ::apache::thrift::transport::TMemoryBuffer()),
+    piprot_(protocolFactory->getProtocol(itrans_)),
+    poprot_(protocolFactory->getProtocol(otrans_)) {
+    iprot_ = piprot_.get();
+    oprot_ = poprot_.get();
+  }
+  boost::shared_ptr< ::apache::thrift::async::TAsyncChannel> getChannel() {
+    return channel_;
+  }
+  virtual void completed__(bool success) {}
+  void mandelbrot(std::tr1::function<void(ImagingCobClient* client)> cob, const int32_t w, const int32_t h);
+  void send_mandelbrot(const int32_t w, const int32_t h);
+  void recv_mandelbrot(std::string& _return);
+  void transform(std::tr1::function<void(ImagingCobClient* client)> cob, const Transform::type t, const std::string& img);
+  void send_transform(const Transform::type t, const std::string& img);
+  void recv_transform(std::string& _return);
+ protected:
+  boost::shared_ptr< ::apache::thrift::async::TAsyncChannel> channel_;
+  boost::shared_ptr< ::apache::thrift::transport::TMemoryBuffer> itrans_;
+  boost::shared_ptr< ::apache::thrift::transport::TMemoryBuffer> otrans_;
+  boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
+  boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
+  ::apache::thrift::protocol::TProtocol* iprot_;
+  ::apache::thrift::protocol::TProtocol* oprot_;
+};
+
+class ImagingAsyncProcessor : virtual public ::apache::thrift::TAsyncProcessor {
+ protected:
+  boost::shared_ptr<ImagingCobSvIf> iface_;
+  virtual void process_fn(std::tr1::function<void(bool ok)> cob, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, std::string& fname, int32_t seqid);
+ private:
+  std::map<std::string, void (ImagingAsyncProcessor::*)(std::tr1::function<void(bool ok)>, int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*)> processMap_;
+  void process_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void return_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return);
+  void throw_mandelbrot(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw);
+  void process_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot);
+  void return_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, const std::string& _return);
+  void throw_transform(std::tr1::function<void(bool ok)> cob, int32_t seqid, ::apache::thrift::protocol::TProtocol* oprot, void* ctx, ::apache::thrift::TDelayedException* _throw);
+ public:
+  ImagingAsyncProcessor(boost::shared_ptr<ImagingCobSvIf> iface) :
+    iface_(iface) {
+    processMap_["mandelbrot"] = &ImagingAsyncProcessor::process_mandelbrot;
+    processMap_["transform"] = &ImagingAsyncProcessor::process_transform;
+  }
+
+  virtual void process(std::tr1::function<void(bool ok)> cob, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot);
+  virtual ~ImagingAsyncProcessor() {}
 };
 
 } // namespace
