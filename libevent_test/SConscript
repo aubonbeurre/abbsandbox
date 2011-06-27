@@ -3,6 +3,7 @@ Import('env')
 import sys
 
 BOOST_ROOT = env['BOOST_ROOT']
+SRC_ROOT = env['SRC_ROOT']
 
 if sys.platform == 'win32':
     LIBEVENT = 'J:/sources/libevent/'
@@ -10,7 +11,7 @@ else:
     LIBEVENT = '/usr/local/libevent-2.0.12/'
 
 src = [
-     'test.cpp',
+     SRC_ROOT + 'test.cpp',
 ]
 
 cpppath = [
