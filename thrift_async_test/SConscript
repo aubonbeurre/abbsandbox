@@ -88,6 +88,8 @@ else:
 
 
 clientdeps = [
+    'myjpeg',
+    'boost_filesystem',
 ]
 
 
