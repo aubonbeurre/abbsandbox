@@ -113,9 +113,9 @@ int main(int argc, char **argv) {
 	boost::program_options::options_description optionsDesc("Allowed options");
 	optionsDesc.add_options()
 		("help,h", "Help message")
-		("port,p", boost::program_options::value<int>(&port)->default_value(9090), "Port (default 9090)")
-		("threads,t", boost::program_options::value<int>(&threads)->default_value(15), "# of threads (default 15)")
-		("server,s", boost::program_options::value<std::string>(&server)->default_value("nb"), "Server nb http (default nb)");
+		("port,p", boost::program_options::value<int>(&port)->default_value(9090), "Server port")
+		("threads,t", boost::program_options::value<int>(&threads)->default_value(15), "# of threads")
+		("server,s", boost::program_options::value<std::string>(&server)->default_value("nb"), "Server nb, http");
 
 	try {
 		boost::program_options::variables_map optionsMap;
