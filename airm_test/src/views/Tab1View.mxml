@@ -1,7 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:View xmlns:fx="http://ns.adobe.com/mxml/2009" 
-		xmlns:s="library://ns.adobe.com/flex/spark" title="Tab1">
+		xmlns:s="library://ns.adobe.com/flex/spark" title="Tab1" creationComplete="view1_creationCompleteHandler(event)">
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:RadioButtonGroup id="grp" change="grp_changeHandler(event)" selectedValue="N" />
 	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import imaging.ImagingImpl;
+			import imaging.ImagingProcessor;
+			import imaging.Transform;
+			
+			import mx.events.FlexEvent;
+			
+			import org.apache.thrift.protocol.TBinaryProtocol;
+			import org.apache.thrift.transport.TFullDuplexHttpClient;
+			import org.apache.thrift.transport.THttpClient;
+			import org.apache.thrift.transport.TTransport;
+			
+			import spark.components.Image;
+			import spark.components.View;
+			
+			protected function get_client():ImagingImpl {
+				var req:URLRequest = new URLRequest("http://192.168.1.95:9090/");
+				req.method = URLRequestMethod.POST;
+				var trans:THttpClient = new THttpClient(req);
+				
+				var prot:TBinaryProtocol = new TBinaryProtocol(trans);
+				var impl:ImagingImpl = new ImagingImpl(prot);
+				var proc:ImagingProcessor = new ImagingProcessor(impl);
+				
+				return impl;
+			}
+			
+			protected function mandelbrot(callback:Function=null):void {
+				var impl:ImagingImpl = get_client();
+				
+				var onError:Function = function(error:Error):void {
+					trace(error.toString());
+				}
+				
+				var onSuccess:Function = function(res:ByteArray):void {
+					if(callback) {
+						callback(res);
+						return;
+					}
+					var tmpFile:File = File.createTempFile();
+					var fd:FileStream = new FileStream();
+					fd.open(tmpFile, FileMode.WRITE);
+					fd.writeBytes(res);
+					fd.close();
+					
+					trace(res.length);
+					
+					theImg.source = tmpFile.url;
+				}
+				
+				impl.mandelbrot(400, 400, onError, onSuccess);
+			}
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void
+			{
+				mandelbrot();
+			}
+			
+			protected function grp_changeHandler(event:Event):void
+			{
+				theImg.source = null;
+				
+				if(event.target.selectedValue == "N") {
+					mandelbrot();
+				} else if(event.target.selectedValue == "CCW") {
+					var ccw:Function = function(res:ByteArray):void {
+						var impl:ImagingImpl = get_client();
+						
+						var onError:Function = function(error:Error):void {
+							trace(error.toString());
+						}
+						
+						var onSuccess:Function = function(res:ByteArray):void {
+							var tmpFile:File = File.createTempFile();
+							var fd:FileStream = new FileStream();
+							fd.open(tmpFile, FileMode.WRITE);
+							fd.writeBytes(res);
+							fd.close();
+							
+							trace(res.length);
+							
+							theImg.source = tmpFile.url;
+						}
+						
+						impl.transform(imaging.Transform.ROTATE90CCW, res, onError, onSuccess);
+					}
+					
+					mandelbrot(ccw);
+				} else if(event.target.selectedValue == "G") {
+					var gradient:Function = function(res:ByteArray):void {
+						var impl:ImagingImpl = get_client();
+						
+						var onError:Function = function(error:Error):void {
+							trace(error.toString());
+						}
+						
+						var onSuccess:Function = function(res:ByteArray):void {
+							var tmpFile:File = File.createTempFile();
+							var fd:FileStream = new FileStream();
+							fd.open(tmpFile, FileMode.WRITE);
+							fd.writeBytes(res);
+							fd.close();
+							
+							trace(res.length);
+							
+							theImg.source = tmpFile.url;
+						}
+						
+						impl.transform(imaging.Transform.XGRADIENT, res, onError, onSuccess);
+					}
+					
+					mandelbrot(gradient);
+				}
+			}
+			
+		]]>
+	</fx:Script>	
+
+	<s:Image id="theImg" source="" scaleMode="letterbox" width="100%" height="100%" />
+
+	<s:HGroup>
+		<s:RadioButton label="N" group="{grp}" />
+		<s:RadioButton label="CCW" group="{grp}" />
+		<s:RadioButton label="G" group="{grp}" />
+	</s:HGroup>
 </s:View>

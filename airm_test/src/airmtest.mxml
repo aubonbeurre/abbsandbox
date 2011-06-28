@@ -3,41 +3,15 @@
 								  xmlns:s="library://ns.adobe.com/flex/spark" creationComplete="tabbedviewnavigatorapplication1_creationCompleteHandler(event)">
 	<fx:Script>
 		<![CDATA[
-			import imaging.ImagingImpl;
-			import imaging.ImagingProcessor;
-			
 			import mx.events.FlexEvent;
-			
-			import org.apache.thrift.protocol.TBinaryProtocol;
-			import org.apache.thrift.transport.TFullDuplexHttpClient;
-			import org.apache.thrift.transport.THttpClient;
-			import org.apache.thrift.transport.TTransport;
-			
+
 			protected function tabbedviewnavigatorapplication1_creationCompleteHandler(event:FlexEvent):void
 			{
-				var req:URLRequest = new URLRequest("http://192.168.1.95:9090/");
-				req.method = URLRequestMethod.POST;
-				var trans:THttpClient = new THttpClient(req);
-
-				var prot:TBinaryProtocol = new TBinaryProtocol(trans);
-				var impl:ImagingImpl = new ImagingImpl(prot);
-				var proc:ImagingProcessor = new ImagingProcessor(impl);
-				
-				
-				var onError:Function = function(error:Error):void {
-					trace(error.toString());
-				}
-				
-				var onSuccess:Function = function(res:ByteArray):void {
-					trace(res.length);
-				}
-				
-				impl.mandelbrot(100, 100, onError, onSuccess);
 			}
 			
 		]]>
 	</fx:Script>
-	<s:ViewNavigator label="Tab1" width="100%" height="100%" firstView="views.Tab1View"/>
+	<s:ViewNavigator id="tab1" label="Tab1" width="100%" height="100%" firstView="views.Tab1View"/>
 	<s:ViewNavigator label="Tab2" width="100%" height="100%" firstView="views.Tab2View"/>
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
