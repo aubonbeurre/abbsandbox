@@ -1,0 +1,8 @@
+Waf 1.6.x
+---------
+
+GENERAL IMPROVEMENTS
+
+- more debugging tools (list of dependencies, etc)
+- investigate the deadlock on jython with -j>1
+
