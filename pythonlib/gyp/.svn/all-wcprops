@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/!svn/ver/935/trunk/pylib/gyp
+END
+common.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/839/trunk/pylib/gyp/common.py
+END
+xcodeproj_file.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/895/trunk/pylib/gyp/xcodeproj_file.py
+END
+MSVSVersion.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/915/trunk/pylib/gyp/MSVSVersion.py
+END
+input.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/933/trunk/pylib/gyp/input.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/935/trunk/pylib/gyp/__init__.py
+END
+MSVSNew.py
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/870/trunk/pylib/gyp/MSVSNew.py
+END
+xml_fix.py
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/901/trunk/pylib/gyp/xml_fix.py
+END
+MSVSSettings_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/906/trunk/pylib/gyp/MSVSSettings_test.py
+END
+MSVSSettings.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/910/trunk/pylib/gyp/MSVSSettings.py
+END
+MSVSProject.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/901/trunk/pylib/gyp/MSVSProject.py
+END
+easy_xml_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/886/trunk/pylib/gyp/easy_xml_test.py
+END
+easy_xml.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/901/trunk/pylib/gyp/easy_xml.py
+END
+system_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/914/trunk/pylib/gyp/system_test.py
+END
+SCons.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/776/trunk/pylib/gyp/SCons.py
+END
+MSVSToolFile.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/901/trunk/pylib/gyp/MSVSToolFile.py
+END
+MSVSUserFile.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/901/trunk/pylib/gyp/MSVSUserFile.py
+END
