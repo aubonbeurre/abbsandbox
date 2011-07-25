@@ -17,6 +17,8 @@ import os
 import sys
 import shutil
 import tempfile
+import types
+import logging
 
 import SCons
 from SCons.Script.SConscript import SConsEnvironment
@@ -38,7 +40,23 @@ else:
         FAIL = ''
         ENDC = ''
     
-bc = bcolors()
+
+def _exec_script(dest, src, dir):
+    try:
+        src = src.split(" ")
+        p = subprocess.Popen(src, cwd=dir)
+        p.wait()
+    except:
+        logging.error("FAILED", exc_info=True)
+
+    if p.returncode != 0:
+        raise Exception('"%s" call failed' % src)
+    
+    
+def _exec_script_str(dest, src, dir):
+    dest = os.path.basename(dest)
+    return bc.HEADER + 'Executing "%s" ' % src +bc.ENDC + "for " + bc.OKGREEN + dest + bc.ENDC
+
 
 def get_cc_version(CC):
     p = subprocess.Popen([CC, "--version"], stdout=subprocess.PIPE)
@@ -139,8 +157,14 @@ class AbbEnvironment(SConsEnvironment):
                 object = '${BUILD_DIR}/%s_build/%s' % (component_name, os.path.basename(base))
                 o = lenv.SharedObject(object, cpp)
                 objs.append(o[0])
-        return objs
 
+        if pch:
+            lenv['GchSh'] = lenv.GchSh('${BUILD_DIR}/%s_build/' % component_name + os.path.basename(pch) + ".gch", pch)[0]
+            lenv.Prepend(CPPPATH=["${BUILD_DIR}/%s_build/" % component_name])
+            for o in objs:
+                lenv.Depends(o, lenv['GchSh'])
+
+        return objs
 
     def _apply_use(self, env, use, **kw):
         for u in use:
