@@ -34,7 +34,7 @@ boost::filesystem::path get_tmp_filename()
 #else
 boost::filesystem::path get_tmp_filename()
 {
-	char filename[MAX_PATH];
+	char filename[PATH_MAX];
     boost::mutex::scoped_lock	lock(server_mutex);
 
     int fd;

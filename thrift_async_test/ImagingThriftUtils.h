@@ -15,6 +15,10 @@
 
 namespace imaging {
 
+extern rgb8_image_t image_from_string(const std::string& img);
+
+extern boost::filesystem::path get_tmp_filename();
+
 template <typename Img>
 void copy_transform(const Img& srcimg, const Transform::type t, Img& dstimg) {
 	typedef typename Img::const_view_t          src_cview_t;
@@ -77,9 +81,5 @@ void view_to_string(const SrcView& v, std::string& _return) {
 
 	boost::filesystem::remove(jpegpath);
 }
-
-rgb8_image_t image_from_string(const std::string& img);
-
-boost::filesystem::path get_tmp_filename();
 
 } // namespace imaging

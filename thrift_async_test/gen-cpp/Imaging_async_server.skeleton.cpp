@@ -24,13 +24,13 @@ class ImagingAsyncHandler : public ImagingCobSvIf {
   }
   virtual ~ImagingAsyncHandler();
 
-  void mandelbrot(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const int32_t w, const int32_t h) {
+  void mandelbrot(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> /* exn_cob */, const int32_t w, const int32_t h) {
     std::string _return = "";
     syncHandler_->mandelbrot(_return, w, h);
     return cob(_return);
   }
 
-  void transform(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> exn_cob, const Transform::type t, const std::string& img) {
+  void transform(std::tr1::function<void(std::string const& _return)> cob, std::tr1::function<void(::apache::thrift::TDelayedException* _throw)> /* exn_cob */, const Transform::type t, const std::string& img) {
     std::string _return = "";
     syncHandler_->transform(_return, t, img);
     return cob(_return);
