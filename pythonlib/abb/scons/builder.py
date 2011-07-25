@@ -40,6 +40,7 @@ else:
         FAIL = ''
         ENDC = ''
     
+bc = bcolors()
 
 def _exec_script(dest, src, dir):
     try:
@@ -125,7 +126,8 @@ class AbbEnvironment(SConsEnvironment):
                                             _copy_files_or_dirs_or_symlinks_str,
                                             convert=str)
     AbbSymLink = SCons.Action.ActionFactory(_symlink, _symlink_str, convert=str)
-
+    
+    AbbExec = SCons.Action.ActionFactory(_exec_script, _exec_script_str, convert=str)
 
     def boost_version(self):
         BOOST_ROOT = self["BOOST_ROOT"]
@@ -140,7 +142,7 @@ class AbbEnvironment(SConsEnvironment):
         raise "Unexpected unknown boost version"
 
 
-    def __AbbObjFiles(self, lenv, component_name, sources):
+    def __AbbObjFiles(self, lenv, component_name, sources, pch=None):
         objs = []
         for cpp_list in sources:
             if type(cpp_list) == type([]):
@@ -165,10 +167,6 @@ class AbbEnvironment(SConsEnvironment):
                 lenv.Depends(o, lenv['GchSh'])
 
         return objs
-
-    def _apply_use(self, env, use, **kw):
-        for u in use:
-            u(env, **kw)
 
 
     @staticmethod
@@ -209,26 +207,46 @@ class AbbEnvironment(SConsEnvironment):
             
             lenv.Requires(target, [lenv.Alias(prj), lenv.Alias(sln)])
 
-    
-    def AbbLib(self=None, libname=None, sources=[], includes=[], defines={}, use=[]):
-        if not self or not libname or not sources:
-            print bc.FAIL+'Cannot continue. Missing argument for AbbLib '+libname+bc.ENDC
-            self.Exit()
 
-        lenv = self.Clone()        
-        self._apply_use(lenv, use, sources=sources, includes=includes, defines=defines)
-        
-        libfile = lenv.File('${BUILD_DIR}/${LIBPREFIX}%s${LIBSUFFIX}' % libname)
-        lib = lenv.Library(libfile, source=sources)
-        SConsEnvironment.Default(self, lib) # we add to default target, because this way we get some kind of progress info during build
-        
+    @staticmethod
+    def _apply_use(lenv, use, sources=[], includes=[], defines={}, linkflags=[],
+                        libs=[], libpath=[], deps=[],
+                        cflags=[], cxxflags=[], isProgram=False):
+        for u in use:
+            u(lenv, sources=sources, includes=includes, defines=defines, linkflags=linkflags,
+                libs=libs, libpath=libpath, deps=deps)
+
+        lenv.Append(LIBPATH=[" ${BUILD_DIR}"])
+        if libs:
+            lenv.Append(LIBS=libs)
+        if deps:
+            lenv.Append(LIBS=deps)
+        if libpath:
+            lenv.Append(LIBPATH=libpath)
         if includes:
             lenv.Append(CPPPATH=includes)
         if defines:
             lenv.Append(CPPDEFINES=defines)
+        if linkflags:
+            lenv.Append(LINKFLAGS=linkflags)
+        if cflags:
+            lenv.Append(CFLAGS=cflags)
+        if cxxflags:
+            lenv.Append(CXXFLAGS=cxxflags)
 
-        self.__add_MSVS(lenv, lib, libname, sources=sources, includes=includes)
-        return lib
+        if sys.platform != 'win32':
+            if not isProgram:
+                lenv.Append(LINKFLAGS=["-Wl,-shared,-Bsymbolic"])
+                
+            lenv.Append(LINKFLAGS=["-Wl,--rpath=\\$$ORIGIN/", "-Wl,--rpath-link=\\$$ORIGIN/", "-Wl,--no-undefined"])
+
+
+    def __post_setup(self, lenv, target, deps):
+        SConsEnvironment.Default(self, target)
+        
+        if deps:
+            dependencies = map(lambda x: lenv.Alias(x), deps)
+            lenv.Requires(target, dependencies)
 
     
     def AbbSharedLib(self=None, shlibname=None, sources=[], includes=[], defines={}, linkflags=[],
@@ -238,22 +256,8 @@ class AbbEnvironment(SConsEnvironment):
         lenv = self.Clone()
         self._apply_use(lenv, use, sources=sources, includes=includes, defines=defines, linkflags=linkflags,
                         libs=libs, libpath=libpath, deps=deps)
-        
-        lenv.Append(LIBPATH=[" ${BUILD_DIR}"])
-        if libpath:
-            lenv.Append(LIBPATH=libpath)
-        if includes:
-            lenv.Append(CPPPATH=includes)
-        if defines:
-            lenv.Append(CPPDEFINES=defines)
-        if linkflags:
-            lenv.Append(LINKFLAGS=linkflags)
 
-        if sys.platform != 'win32':
-            lenv.Append(LINKFLAGS=["-Wl,-shared,-Bsymbolic", "-Wl,--rpath=\\$$ORIGIN/", "-Wl,--rpath-link=\\$$ORIGIN/", "-Wl,--no-undefined"])
         
-        if deps:
-            lenv.Append(LIBS=deps)
         if libs:
             lenv.Append(LIBS=libs)
 
@@ -264,13 +268,9 @@ class AbbEnvironment(SConsEnvironment):
         else:
             shlibfile = lenv.File('${BUILD_DIR}/${SHLIBPREFIX}%s${SHLIBSUFFIX}' % shlibname)
         
-        shlib = lenv.SharedLibrary(shlibname, source=objs)
-        SConsEnvironment.Default(self, shlib)
+        shlib = lenv.SharedLibrary(shlibfile, source=objs)
         
-        if deps:
-            dependencies = map(lambda x: lenv.Alias(x), deps)
-            lenv.Requires(shlib, dependencies)
-
+        self.__post_setup(lenv, shlib, deps)
         self.__add_MSVS(lenv, shlib, shlibname, sources=sources, includes=includes)
         return shlib
 
@@ -281,39 +281,31 @@ class AbbEnvironment(SConsEnvironment):
 
         lenv = self.Clone()
         self._apply_use(lenv, use, sources=sources, includes=includes, defines=defines, linkflags=linkflags,
-                        libs=libs, libpath=libpath, deps=deps)
-
-        lenv.Append(LIBPATH=["${BUILD_DIR}"])
-        if libpath:
-            lenv.Append(LIBPATH=libpath)
-        if includes:
-            lenv.Append(CPPPATH=includes)
-        if defines:
-            lenv.Append(CPPDEFINES=defines)
-        if linkflags:
-            lenv.Append(LINKFLAGS=linkflags)
-        
-        if sys.platform != 'win32':
-            lenv.Append(LINKFLAGS=["--rpath=\\$$ORIGIN/", "-Wl,--rpath-link=\\$$ORIGIN/", "-Wl,--no-undefined"])
-
-        if deps:
-            lenv.Append(LIBS=deps)
-        if libs:
-            lenv.Append(LIBS=libs)
+                        libs=libs, libpath=libpath, deps=deps, isProgram=True)
 
         objs = self.__AbbObjFiles(lenv, progname, sources)
 
         progfile = lenv.File('${BUILD_DIR}/%s${PROGSUFFIX}' % progname)
         prog = lenv.Program(progfile, source=objs)
-        SConsEnvironment.Default(self, prog)
-        
-        if deps:
-            dependencies = map(lambda x: lenv.Alias(x), deps)
-            lenv.Requires(prog, dependencies)
 
+        self.__post_setup(lenv, prog, deps)
         self.__add_MSVS(lenv, prog, progname, sources=sources, includes=includes)
         return prog
     
+    
+    def _AbbLib(self=None, libname=None, sources=[]):
+        if not self or not libname or not sources:
+            print bc.FAIL+'Cannot continue. Missing argument for AbbLib '+libname+bc.ENDC
+            self.Exit()
+
+        lenv = self.Clone()        
+        
+        libfile = lenv.File('${BUILD_DIR}/${LIBPREFIX}%s${LIBSUFFIX}' % libname)
+        lib = lenv.Library(libfile, source=sources)
+        SConsEnvironment.Default(self, lib) # we add to default target, because this way we get some kind of progress info during build
+        
+        return lib
+
     
     def AbbSharedObj(self, component_name, sources=[], includes=[], defines={}, use=[]):
         print bc.HEADER+'Configuring shared objects '+bc.ENDC+bc.OKGREEN+component_name+bc.ENDC
@@ -321,19 +313,16 @@ class AbbEnvironment(SConsEnvironment):
         lenv = self.Clone()
         self._apply_use(lenv, use, sources=sources, includes=includes, defines=defines)
         
-        if includes:
-            lenv.Append(CPPPATH=includes)
-        if defines:
-            lenv.Append(CPPDEFINES=defines)
-        
         objs = self.__AbbObjFiles(lenv, component_name, sources)
         
-        outputs = lenv.AbbLib(component_name, sources=objs)
-        outputs[0].attributes.shared = 1
+        lib = lenv._AbbLib(component_name, sources=objs)
+        self.__add_MSVS(lenv, lib, component_name, sources=sources, includes=includes)
+        lib[0].attributes.shared = 1
         
-        target = lenv.Alias(component_name, outputs)
+        target = lenv.Alias(component_name, lib)
         target[0].attributes.shared = 1
         
+        self.__post_setup(lenv, target, component_name)
         return target
 
 
@@ -414,11 +403,11 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
         
         if GCC:
             if GCC == 46:
-                CC="gcc-4.4"
-                CXX="g++-4.4"
+                CC="gcc-4.6"
+                CXX="g++-4.6"
             elif GCC == 45:
-                CC="gcc-4.4"
-                CXX="g++-4.4"
+                CC="gcc-4.5"
+                CXX="g++-4.5"
             elif GCC == 44:
                 CC="gcc-4.4"
                 CXX="g++-4.4"
@@ -466,7 +455,7 @@ def CreateAbbEnvironment(rootdir, ARGUMENTS):
             env.Append(ARFLAGS=['/MACHINE:X64'])
     
         if DEBUG:
-            env.Append(CCFLAGS=['/Od', '/Gm', '/MDd']) # '/MTd'
+            env.Append(CCFLAGS=['/Od', '/MDd']) # '/MTd'
             env.Append(LINKFLAGS=['/DEBUG'])
         else:
             env.Append(CCFLAGS=['/O2', '/MD']) # '/MT'

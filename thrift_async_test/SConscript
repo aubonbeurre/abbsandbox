@@ -7,7 +7,7 @@ if sys.platform == 'win32':
     THRIFT = "J:/sources/thrift/"
     LIBEVENT = "J:/sources/libevent/"
 else:
-    THRIFT = "/usr/local/thrift-0.6.1/"
+    THRIFT = "/usr/local/thrift-0.7.0/"
     LIBEVENT = "/usr/local/libevent-2.0.12/"
 
 SRC_ROOT = env['SRC_ROOT']
@@ -41,7 +41,6 @@ cpppath = [
 
 cppdefines = {
      'BOOST_ALL_NO_LIB':None,
-     'HAVE_CONFIG_H':None,
 }
 
 if sys.platform == 'win32':
@@ -81,6 +80,9 @@ else:
     cpppath += [
         THRIFT + 'include/thrift',
     ]
+    cppdefines.update({
+	     'HAVE_CONFIG_H':None,
+	})
 
 
 clientdeps = [

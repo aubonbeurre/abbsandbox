@@ -26,7 +26,8 @@ env = abbb.CreateAbbEnvironment(dir.abspath, ARGUMENTS)
 Export('env')
 
 if sys.platform == 'win32':
-    env['BOOST_ROOT'] = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
+    #env['BOOST_ROOT'] = "J:/sources/thrift_3rd_party/boost/boost_1_44_0/"
+    env['BOOST_ROOT'] = "J:/sources/dvamain/third_party/boost_libraries/"
 else:
     env['BOOST_ROOT'] = "/home/aparente/sources/boost/"
 

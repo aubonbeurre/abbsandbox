@@ -1,3 +1,5 @@
+#include "CommonHeader.h"
+
 #include "ImagingHandler.h"
 
 #include "ImagingThriftUtils.h"

@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "CommonHeader.h"
 
 #include <concurrency/ThreadManager.h>
 #include <concurrency/PosixThreadFactory.h>
@@ -103,7 +104,7 @@ int main(int argc, char **argv) {
 
 	std::cout << "Version: " << event_get_version() << std::endl;
 	std::cout << "Method: " << event_base_get_method(base) << std::endl;
-	std::cout << "Features: 0x" << std::hex << event_base_get_features(base) << std::endl;
+	std::cout << "Features: 0x" << std::hex << event_base_get_features(base) << std::dec << std::endl;
 	std::cout << "Base: " << base << std::endl;
 	while(*methods) {
 		std::cout << "Method: " << *methods++ << std::endl;

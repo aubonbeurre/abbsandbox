@@ -1,5 +1,6 @@
+#include "CommonHeader.h"
+
 #ifdef WIN32
-#include <Windows.h>
 #define snprintf _snprintf_c
 #define PATH_MAX MAX_PATH
 #else
