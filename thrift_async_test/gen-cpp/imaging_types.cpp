@@ -25,7 +25,7 @@ const char* _kTransformNames[] = {
   "ROTATE180",
   "XGRADIENT"
 };
-const std::map<int, const char*> _Transform_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(7, _kTransformValues, _kTransformNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
+//const std::map<int, const char*> _Transform_VALUES_TO_NAMES(::apache::thrift::TEnumIterator(7, _kTransformValues, _kTransformNames), ::apache::thrift::TEnumIterator(-1, NULL, NULL));
 
 const char* InvalidOperation::ascii_fingerprint = "3F5FC93B338687BC7235B1AB103F47B3";
 const uint8_t InvalidOperation::binary_fingerprint[16] = {0x3F,0x5F,0xC9,0x3B,0x33,0x86,0x87,0xBC,0x72,0x35,0xB1,0xAB,0x10,0x3F,0x47,0xB3};
